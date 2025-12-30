@@ -2,7 +2,11 @@ import { Link, useLocation } from "react-router-dom"
 import { cn } from "@/lib/utils"
 
 const navItems = [
+<<<<<<< HEAD
   { path: "/courses", label: "Courses" },
+=======
+  { path: "/", label: "Courses" },
+>>>>>>> origin/main
   { path: "/programmes", label: "Programmes" },
   { path: "/about", label: "About" },
 ]
