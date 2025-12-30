@@ -4,7 +4,7 @@
 
 A React application for visualizing course prerequisites and planning academic pathways at the University of Waterloo.
 
-🌐 **Live Demo:** https://uwvisualizer.com  
+🌐 **Live Demo:** [https://uwvisualizer.com  ](https://www.uwvisualizer.com)
 
 ## License
 
