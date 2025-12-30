@@ -5,7 +5,6 @@ export function MobileBlocker() {
 
   useEffect(() => {
     const checkMobile = () => {
-      // Check screen width (mobile/tablet is typically < 1024px)
       const isSmallScreen = window.innerWidth < 1024;
       setIsMobile(isSmallScreen);
     };
