@@ -22,7 +22,6 @@ export function AboutPage() {
             <li>Visual prerequisite graphs (full prerequisite chain for any target course)</li>
             <li>Clickable course nodes with course details</li>
             <li>Mark courses as Completed or In Progress to track eligibility</li>
-            <li>Progress is stored locally in your browser (no account required)</li>
           </ul>
         </section>
 
@@ -64,7 +63,7 @@ export function AboutPage() {
 
       <div className="mt-12 text-center">
         <p className="text-sm text-muted-foreground">
-          Made by a Waterloo student for a Waterloo student
+          Student-built at the University of Waterloo
         </p>
       </div>
     </div>
