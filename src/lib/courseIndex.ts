@@ -4,7 +4,6 @@ import { normalizeCourseCode } from "./prereq/normalize";
 import courseDataRaw from "@/data/courses.clean.json";
 
 let courseIndex: Map<string, Course> | null = null;
-let courseData: RawCourseData[] | null = null;
 
 /**
  * Loads and indexes course data from the JSON file.
@@ -17,7 +16,6 @@ export async function loadCourseIndex(): Promise<Map<string, Course>> {
 
   try {
     const rawData = courseDataRaw as RawCourseData[];
-    courseData = rawData;
 
     const index = new Map<string, Course>();
 

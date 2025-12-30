@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Handle, Position, type NodeProps } from "reactflow"
 import { cn } from "@/lib/utils"
 import { getCourseStatus } from "@/lib/storage/courseStatusStore"
@@ -25,7 +25,7 @@ export function CourseNode({ data, selected }: NodeProps<CourseNodeData>) {
     }
   }, [data.code])
 
-  const statusStyles = {
+  const statusStyles: Record<CourseStatus, string> = {
     completed: "bg-green-500/15 border-green-500/50 text-green-400 shadow-green-500/10",
     in_progress: "bg-blue-500/15 border-blue-500/50 text-blue-400 shadow-blue-500/10",
     not_taken: "bg-muted/30 border-border text-muted-foreground",

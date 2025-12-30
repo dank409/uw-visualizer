@@ -1,4 +1,4 @@
-import type { Prereq, CourseCode } from "../types";
+import type { Prereq } from "../types";
 import { normalizeCourseCode } from "./normalize";
 
 /**

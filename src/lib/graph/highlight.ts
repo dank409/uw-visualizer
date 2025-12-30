@@ -1,5 +1,4 @@
 import type { Node, Edge } from "reactflow";
-import type { CourseCode } from "../types";
 import { getCourse } from "../courseIndex";
 import { collectCourseCodes } from "../prereq/ancestors";
 

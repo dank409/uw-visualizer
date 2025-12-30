@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useState, useEffect } from "react"
 import ReactFlow, {
   Background,
   Controls,
@@ -8,6 +8,7 @@ import ReactFlow, {
   type Edge,
   type OnNodesChange,
   type OnEdgesChange,
+  type BackgroundVariant,
   applyNodeChanges,
   applyEdgeChanges,
   useReactFlow,
@@ -40,7 +41,7 @@ function GraphCanvasInner({
   const [edgesState, setEdgesState] = useState<Edge[]>(edges)
 
   // Update nodes/edges when props change
-  React.useEffect(() => {
+  useEffect(() => {
     setNodesState(nodes)
     setEdgesState(edges)
   }, [nodes, edges])
@@ -104,13 +105,13 @@ function GraphCanvasInner({
   }, [edgesState, highlightState, hoveredNodeId])
 
   const handleNodeClick = useCallback(
-    (event: React.MouseEvent, node: Node) => {
+    (_event: React.MouseEvent, node: Node) => {
       onNodeClick?.(node.id)
     },
     [onNodeClick]
   )
 
-  const handleNodeMouseEnter = useCallback((event: React.MouseEvent, node: Node) => {
+  const handleNodeMouseEnter = useCallback((_event: React.MouseEvent, node: Node) => {
     setHoveredNodeId(node.id)
   }, [])
 
@@ -154,7 +155,7 @@ function GraphCanvasInner({
         maxZoom={2}
       >
         <Background 
-          variant="dots" 
+          variant={"dots" as BackgroundVariant}
           gap={20} 
           size={1}
           className="opacity-20"

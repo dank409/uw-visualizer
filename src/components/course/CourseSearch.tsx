@@ -44,7 +44,7 @@ export function CourseSearch({
     setFocusedIndex(-1)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault()
       setFocusedIndex((prev) => (prev < results.length - 1 ? prev + 1 : prev))
@@ -68,7 +68,7 @@ export function CourseSearch({
         type="text"
         placeholder="Search for a course (e.g., CS135, MATH137)..."
         value={query}
-        onChange={(e) => {
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
           setQuery(e.target.value)
           setIsOpen(true)
           setFocusedIndex(-1)
@@ -79,7 +79,7 @@ export function CourseSearch({
       />
       {isOpen && results.length > 0 && (
         <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-background shadow-lg">
-          {results.map((course, index) => (
+          {results.map((course: Course, index: number) => (
             <button
               key={course.code}
               type="button"

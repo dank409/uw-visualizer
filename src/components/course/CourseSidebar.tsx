@@ -1,4 +1,3 @@
-import React from "react"
 import { CourseSearchCommand } from "./CourseSearchCommand"
 import type { Course } from "@/lib/types"
 

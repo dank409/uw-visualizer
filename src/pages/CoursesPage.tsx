@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { CourseSidebar } from "@/components/course/CourseSidebar"
 import { GraphCanvas } from "@/components/graph/GraphCanvas"
 import { CourseDetailsDrawer } from "@/components/course/CourseDetailsDrawer"
@@ -23,11 +23,6 @@ export function CoursesPage() {
   const handleSelectCourse = (course: Course) => {
     setSelectedCourse(course)
     setShowGraph(true)
-  }
-
-  const handleRemoveCourse = () => {
-    setSelectedCourse(null)
-    setShowGraph(false)
   }
 
   const handleNodeClick = (nodeId: string) => {

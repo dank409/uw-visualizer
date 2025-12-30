@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { Check, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -37,7 +37,7 @@ export function CourseSearchCommand({
   const handleSelect = (value: string) => {
     // Extract course code from the value (format: "CODE Title")
     const courseCode = value.split(" ")[0]
-    const course = courses.find((c) => c.code === courseCode)
+    const course = courses.find((c: Course) => c.code === courseCode)
     if (course) {
       onSelectCourse(course)
       setOpen(false)
@@ -86,7 +86,7 @@ export function CourseSearchCommand({
           <CommandList>
             <CommandEmpty>No course found.</CommandEmpty>
             <CommandGroup>
-              {courses.map((course) => (
+              {courses.map((course: Course) => (
                 <CommandItem
                   key={course.code}
                   value={`${course.code} ${course.title}`}
