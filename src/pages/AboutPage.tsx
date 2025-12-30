@@ -14,17 +14,6 @@ export function AboutPage() {
         </section>
 
         <section>
-          <h2 className="mb-3 text-xl font-semibold">Features</h2>
-          <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-            <li>Visualize prerequisite chains as interactive graphs</li>
-            <li>Support for AND/OR prerequisite logic</li>
-            <li>Hover to highlight prerequisite paths</li>
-            <li>Track your course completion status</li>
-            <li>View detailed course information</li>
-          </ul>
-        </section>
-
-        <section>
           <h2 className="mb-3 text-xl font-semibold">How to Use</h2>
           <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
             <li>Navigate to the Courses page</li>
@@ -38,12 +27,11 @@ export function AboutPage() {
         <section>
           <h2 className="mb-3 text-xl font-semibold">Data</h2>
           <p className="text-muted-foreground">
-            This application uses real course data from the University of Waterloo.
-            All course information is loaded from official sources and updated regularly.
+          All course information is sourced from the University of Waterloo Undergraduate Academic Calendar:
+          https://uwaterloo.ca/academic-calendar/undergraduate-studies/catalog#/home
           </p>
         </section>
       </div>
     </div>
   )
 }
-
