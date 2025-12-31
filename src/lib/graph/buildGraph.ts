@@ -1,7 +1,7 @@
 import type { CourseCode } from "../types";
-import { collectAncestors, collectCourseCodes } from "../prereq/ancestors";
+import { collectAncestors } from "../prereq/ancestors";
 import { getCourse } from "../courseIndex";
-import { parseStructuredPrereq, type RequirementGroup } from "../prereq/parseStructured";
+import { parseStructuredPrereq } from "../prereq/parseStructured";
 
 export type GraphNode = {
   id: string;
@@ -45,9 +45,9 @@ export function buildGraph(targetCode: CourseCode): CourseGraph {
     : null;
   
   // Check if target has OR prerequisites
-  const hasOrPrerequisites = structuredPrereq && 
-                              structuredPrereq.topLevelType === "OR" && 
-                              structuredPrereq.groups.length > 1;
+  const hasOrPrerequisites = structuredPrereq ? 
+                              (structuredPrereq.topLevelType === "OR" && structuredPrereq.groups.length > 1) :
+                              undefined;
 
   // Add target course node
   nodes.push({
