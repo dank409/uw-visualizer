@@ -24,6 +24,23 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
+    
+    /* Custom theme colors */
+    --brand: 172 88% 50%; /* #0CF2A0 */
+    --brand-dark: 172 88% 40%;
+    --page-bg: 0 0% 100%;
+    --page-bg-secondary: 0 0% 98%;
+    --text-primary: 222.2 84% 4.9%;
+    --text-secondary: 215.4 16.3% 46.9%;
+    --text-muted: 215.4 16.3% 46.9%;
+    --header-bg: 0 0% 100%;
+    --header-border: 214.3 31.8% 91.4%;
+    --search-bg: 0 0% 96%;
+    --search-border: 214.3 31.8% 91.4%;
+    --dropdown-bg: 0 0% 100%;
+    --dropdown-border: 214.3 31.8% 91.4%;
+    --sidebar-bg: 0 0% 98%;
+    --sidebar-border: 214.3 31.8% 91.4%;
   }
 
   .dark {
@@ -47,6 +64,23 @@
     --border: 0 0% 15%;
     --input: 0 0% 12%;
     --ring: 0 0% 25%;
+    
+    /* Custom theme colors for dark mode */
+    --brand: 172 88% 50%; /* #0CF2A0 - same brand color */
+    --brand-dark: 172 88% 40%;
+    --page-bg: 0 0% 7%; /* #111111 */
+    --page-bg-secondary: 0 0% 5%;
+    --text-primary: 0 0% 98%;
+    --text-secondary: 0 0% 65%;
+    --text-muted: 0 0% 65%;
+    --header-bg: 0 0% 7%;
+    --header-border: 0 0% 15%;
+    --search-bg: 0 0% 16%; /* #2a2a2a */
+    --search-border: 0 0% 15%;
+    --dropdown-bg: 0 0% 10%; /* #1a1a1a */
+    --dropdown-border: 0 0% 15%;
+    --sidebar-bg: 0 0% 7%;
+    --sidebar-border: 0 0% 15%;
   }
 }
 
@@ -74,7 +108,6 @@
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
-<<<<<<< HEAD
 
   @keyframes shine {
     0% {
@@ -87,7 +120,5 @@
   .animate-shine {
     animation: shine 5s linear infinite;
   }
-=======
->>>>>>> origin/main
 }
 

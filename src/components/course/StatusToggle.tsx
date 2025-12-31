@@ -20,7 +20,7 @@ export function StatusToggle({
         size="sm"
         onClick={() => onStatusChange("completed")}
         className={cn(
-          status === "completed" && "bg-green-600 hover:bg-green-700"
+          status === "completed" && "bg-[hsl(var(--brand))] text-primary-foreground hover:bg-[hsl(var(--brand))]/90"
         )}
       >
         Completed

@@ -23,7 +23,10 @@ import {
     type TargetAndTransition,
     type Variants,
 } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { searchCourses, loadCourseIndex } from '@/lib/courseIndex';
+import type { Course } from '@/lib/types';
+import ThemeSwitch from '@/components/ui/theme-switch';
 
 function cn(...classes: (string | undefined | null | boolean)[]): string {
   return classes.filter(Boolean).join(" ");
@@ -281,14 +284,14 @@ const NavLink: React.FC<NavLinkProps> = ({ href, to, children, hasDropdown = fal
                 <Link
                     to={to}
                     onClick={onClick}
-                    className={cn("text-sm font-medium text-gray-300 hover:text-white transition-colors duration-200 flex items-center py-1", className)}
+                    className={cn("text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 flex items-center py-1", className)}
                 >
                     {children}
                     {hasDropdown && <ChevronDownIcon />}
                 </Link>
                 {!hasDropdown && (
                     <motion.div
-                        className="absolute bottom-[-2px] left-0 right-0 h-[1px] bg-[#0CF2A0]"
+                        className="absolute bottom-[-2px] left-0 right-0 h-[1px] bg-[hsl(var(--brand))]"
                         variants={{ initial: { scaleX: 0, originX: 0.5 }, hover: { scaleX: 1, originX: 0.5 } }}
                         initial="initial"
                         transition={{ duration: 0.3, ease: "easeOut" }}
@@ -302,14 +305,14 @@ const NavLink: React.FC<NavLinkProps> = ({ href, to, children, hasDropdown = fal
         <motion.a
             href={href || "#"}
             onClick={onClick}
-            className={cn("relative group text-sm font-medium text-gray-300 hover:text-white transition-colors duration-200 flex items-center py-1", className)}
+            className={cn("relative group text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 flex items-center py-1", className)}
             whileHover="hover"
         >
             {children}
             {hasDropdown && <ChevronDownIcon />}
             {!hasDropdown && (
                 <motion.div
-                    className="absolute bottom-[-2px] left-0 right-0 h-[1px] bg-[#0CF2A0]"
+                    className="absolute bottom-[-2px] left-0 right-0 h-[1px] bg-[hsl(var(--brand))]"
                     variants={{ initial: { scaleX: 0, originX: 0.5 }, hover: { scaleX: 1, originX: 0.5 } }}
                     initial="initial"
                     transition={{ duration: 0.3, ease: "easeOut" }}
@@ -335,11 +338,62 @@ const InteractiveHero: React.FC = () => {
    const animationFrameId = useRef<number | null>(null);
    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
    const [isScrolled, setIsScrolled] = useState<boolean>(false);
+   const [searchQuery, setSearchQuery] = useState<string>("");
+   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+   const searchRef = useRef<HTMLDivElement>(null);
+   const navigate = useNavigate();
 
    const { scrollY } = useScroll();
    useMotionValueEvent(scrollY, "change", (latest) => {
        setIsScrolled(latest > 10);
    });
+
+   // Load course index on mount
+   useEffect(() => {
+       loadCourseIndex();
+   }, []);
+
+   // Search results
+   const searchResults = useMemo(() => {
+       if (!searchQuery.trim()) return [];
+       return searchCourses(searchQuery).slice(0, 10);
+   }, [searchQuery]);
+
+   // Handle click outside search
+   useEffect(() => {
+       const handleClickOutside = (event: MouseEvent) => {
+           if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+               setIsSearchOpen(false);
+           }
+       };
+       document.addEventListener("mousedown", handleClickOutside);
+       return () => document.removeEventListener("mousedown", handleClickOutside);
+   }, []);
+
+   const handleSelectCourse = (course: Course) => {
+       navigate(`/courses?course=${encodeURIComponent(course.code)}`);
+       setSearchQuery("");
+       setIsSearchOpen(false);
+       setFocusedIndex(-1);
+   };
+
+   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+       if (e.key === "ArrowDown") {
+           e.preventDefault();
+           setFocusedIndex((prev) => (prev < searchResults.length - 1 ? prev + 1 : prev));
+           setIsSearchOpen(true);
+       } else if (e.key === "ArrowUp") {
+           e.preventDefault();
+           setFocusedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+       } else if (e.key === "Enter" && focusedIndex >= 0 && searchResults[focusedIndex]) {
+           e.preventDefault();
+           handleSelectCourse(searchResults[focusedIndex]);
+       } else if (e.key === "Escape") {
+           setIsSearchOpen(false);
+           setFocusedIndex(-1);
+       }
+   };
 
    const dotsRef = useRef<Dot[]>([]);
    const gridRef = useRef<Record<string, number[]>>({});
@@ -532,14 +586,14 @@ const InteractiveHero: React.FC = () => {
 
    const headerVariants: Variants = {
        top: {
-           backgroundColor: "rgba(17, 17, 17, 0.8)",
-           borderBottomColor: "rgba(55, 65, 81, 0.5)",
+           backgroundColor: "hsl(var(--header-bg) / 0.8)",
+           borderBottomColor: "hsl(var(--header-border) / 0.5)",
            position: 'fixed',
            boxShadow: 'none',
        },
        scrolled: {
-           backgroundColor: "rgba(17, 17, 17, 0.95)",
-           borderBottomColor: "rgba(75, 85, 99, 0.7)",
+           backgroundColor: "hsl(var(--header-bg) / 0.95)",
+           borderBottomColor: "hsl(var(--header-border) / 0.7)",
            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
            position: 'fixed'
        }
@@ -572,10 +626,10 @@ const InteractiveHero: React.FC = () => {
     };
 
   return (
-    <div className="pt-[100px] relative bg-[#111111] text-gray-300 min-h-screen flex flex-col overflow-x-hidden">
+    <div className="pt-[100px] relative bg-background text-foreground flex-1 flex-col overflow-x-hidden min-h-screen">
         <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none opacity-80" />
         <div className="absolute inset-0 z-1 pointer-events-none" style={{
-            background: 'linear-gradient(to bottom, transparent 0%, #111111 90%), radial-gradient(ellipse at center, transparent 40%, #111111 95%)'
+            background: `linear-gradient(to bottom, transparent 0%, hsl(var(--page-bg)) 90%), radial-gradient(ellipse at center, transparent 40%, hsl(var(--page-bg)) 95%)`
         }}></div>
 
         <motion.header
@@ -585,47 +639,66 @@ const InteractiveHero: React.FC = () => {
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="px-6 w-full md:px-10 lg:px-16 sticky top-0 z-30 backdrop-blur-md border-b"
         >
-            <nav className="flex justify-between items-center max-w-screen-xl mx-auto h-[70px]">
-                <Link to="/" className="flex items-center flex-shrink-0">
+            <nav className="relative flex items-center max-w-screen-xl mx-auto h-[70px]">
+                <Link to="/" className="flex items-center flex-shrink-0 absolute left-4 md:left-6 lg:left-8">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#0CF2A0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M2 17L12 22L22 17" stroke="#0CF2A0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M2 12L12 17L22 12" stroke="#0CF2A0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="hsl(var(--brand))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="hsl(var(--brand))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="hsl(var(--brand))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    <span className="text-xl font-bold text-white ml-2">UW Visualizer</span>
+                    <span className="text-xl font-bold text-foreground ml-2">UW Visualizer</span>
                 </Link>
 
-                <div className="hidden md:flex items-center justify-center flex-grow space-x-6 lg:space-x-8 px-4">
-                    <NavLink to="/courses">Courses</NavLink>
-                    <NavLink to="/programmes">Programmes</NavLink>
-                    <NavLink to="/about">About</NavLink>
+                <div 
+                    ref={searchRef}
+                    className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2 w-full max-w-md"
+                >
+                    <div className="relative w-full">
+                        <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setIsSearchOpen(true);
+                                setFocusedIndex(-1);
+                            }}
+                            onFocus={() => setIsSearchOpen(true)}
+                            onKeyDown={handleSearchKeyDown}
+                            placeholder="Search courses by code or title"
+                            className="w-full pl-10 pr-4 py-2 rounded-md bg-[hsl(var(--search-bg))] border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(var(--brand))] focus:border-transparent transition-all text-sm"
+                            style={{ borderColor: 'hsl(var(--search-border))' }}
+                        />
+                        {isSearchOpen && searchResults.length > 0 && (
+                            <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border shadow-xl bg-[hsl(var(--dropdown-bg))]" style={{ borderColor: 'hsl(var(--dropdown-border))' }}>
+                                {searchResults.map((course: Course, index: number) => (
+                                    <button
+                                        key={course.code}
+                                        type="button"
+                                        onClick={() => handleSelectCourse(course)}
+                                        onMouseEnter={() => setFocusedIndex(index)}
+                                        className={cn(
+                                            "w-full px-4 py-3 text-left hover:bg-accent transition-colors",
+                                            index === focusedIndex && "bg-accent"
+                                        )}
+                                    >
+                                        <div className="font-semibold text-foreground">{course.code}</div>
+                                        <div className="text-sm text-muted-foreground line-clamp-1">{course.title}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <div className="flex items-center flex-shrink-0 space-x-4 lg:space-x-6">
-                    <motion.a
-                        href="https://github.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hidden md:inline-block text-sm font-medium text-gray-300 hover:text-white transition-colors duration-200"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        GitHub
-                    </motion.a>
-
-                    <Link to="/courses">
-                        <motion.div
-                            className="bg-[#0CF2A0] text-[#111111] px-4 py-[6px] rounded-md text-sm font-semibold hover:bg-opacity-90 transition-colors duration-200 whitespace-nowrap shadow-sm hover:shadow-md"
-                            whileHover={{ scale: 1.03, y: -1 }}
-                            whileTap={{ scale: 0.97 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                        >
-                            Explore Courses
-                        </motion.div>
-                    </Link>
-
+                <div className="flex items-center flex-shrink-0 absolute right-4 md:right-6 lg:right-8 gap-4">
+                    <div className="hidden md:block">
+                        <ThemeSwitch />
+                    </div>
                     <motion.button
-                        className="md:hidden text-gray-300 hover:text-white z-50"
+                        className="md:hidden text-muted-foreground hover:text-foreground z-50"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         aria-label="Toggle menu"
                         whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
@@ -640,14 +713,17 @@ const InteractiveHero: React.FC = () => {
                     <motion.div
                         key="mobile-menu"
                         variants={mobileMenuVariants} initial="hidden" animate="visible" exit="exit"
-                        className="md:hidden absolute top-full left-0 right-0 bg-[#111111]/95 backdrop-blur-sm shadow-lg py-4 border-t border-gray-800/50"
+                        className="md:hidden absolute top-full left-0 right-0 bg-background/95 backdrop-blur-sm shadow-lg py-4 border-t"
+                        style={{ borderColor: 'hsl(var(--border) / 0.5)' }}
                     >
                         <div className="flex flex-col items-center space-y-4 px-6">
                             <NavLink to="/courses" onClick={() => setIsMobileMenuOpen(false)}>Courses</NavLink>
                             <NavLink to="/programmes" onClick={() => setIsMobileMenuOpen(false)}>Programmes</NavLink>
                             <NavLink to="/about" onClick={() => setIsMobileMenuOpen(false)}>About</NavLink>
-                            <hr className="w-full border-t border-gray-700/50 my-2"/>
-                            <NavLink href="https://github.com" onClick={() => setIsMobileMenuOpen(false)}>GitHub</NavLink>
+                            <hr className="w-full border-t my-2" style={{ borderColor: 'hsl(var(--border) / 0.5)' }}/>
+                            <div className="py-2">
+                                <ThemeSwitch />
+                            </div>
                         </div>
                     </motion.div>
                 )}
@@ -660,13 +736,13 @@ const InteractiveHero: React.FC = () => {
                 variants={headlineVariants}
                 initial="hidden"
                 animate="visible"
-                className="text-4xl sm:text-5xl lg:text-[64px] font-semibold text-white leading-tight max-w-4xl mb-4"
+                className="text-4xl sm:text-5xl lg:text-[64px] font-semibold text-foreground leading-tight max-w-4xl mb-4"
             >
                 Visualize Course<br />{' '}
                 <span className="inline-block h-[1.2em] sm:h-[1.2em] lg:h-[1.2em] overflow-hidden align-bottom">
                     <RotatingText
                         texts={['Prerequisites', 'Pathways', 'Dependencies', 'Relationships', 'Requirements']}
-                        mainClassName="text-[#0CF2A0] mx-1"
+                        mainClassName="text-[hsl(var(--brand))] mx-1"
                         staggerFrom={"last"}
                         initial={{ y: "-100%", opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
@@ -685,7 +761,7 @@ const InteractiveHero: React.FC = () => {
                 variants={subHeadlineVariants}
                 initial="hidden"
                 animate="visible"
-                className="text-base sm:text-lg lg:text-xl text-gray-400 max-w-2xl mx-auto mb-8"
+                className="text-base sm:text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto mb-8"
             >
                 Plan your academic journey at the University of Waterloo. Explore course prerequisites, visualize dependencies, and build your perfect schedule.
             </motion.p>
@@ -698,7 +774,7 @@ const InteractiveHero: React.FC = () => {
             >
                 <Link to="/courses">
                     <motion.button
-                        className="w-full sm:w-auto bg-[#0CF2A0] text-[#111111] px-6 py-3 rounded-md text-sm font-semibold hover:bg-opacity-90 transition-colors duration-200 whitespace-nowrap shadow-sm hover:shadow-md"
+                        className="w-full sm:w-auto bg-[hsl(var(--brand))] text-primary-foreground px-6 py-3 rounded-md text-sm font-semibold hover:bg-opacity-90 transition-colors duration-200 whitespace-nowrap shadow-sm hover:shadow-md"
                         whileHover={{ scale: 1.03, y: -1 }}
                         whileTap={{ scale: 0.97 }}
                         transition={{ type: "spring", stiffness: 400, damping: 15 }}
@@ -708,7 +784,8 @@ const InteractiveHero: React.FC = () => {
                 </Link>
                 <Link to="/about">
                     <motion.button
-                        className="w-full sm:w-auto bg-transparent border border-gray-700 text-gray-300 px-6 py-3 rounded-md text-sm font-semibold hover:border-[#0CF2A0] hover:text-white transition-colors duration-200 whitespace-nowrap"
+                        className="w-full sm:w-auto bg-transparent border text-muted-foreground px-6 py-3 rounded-md text-sm font-semibold hover:border-[hsl(var(--brand))] hover:text-foreground transition-colors duration-200 whitespace-nowrap"
+                        style={{ borderColor: 'hsl(var(--border))' }}
                         whileHover={{ scale: 1.03, y: -1 }}
                         whileTap={{ scale: 0.97 }}
                         transition={{ type: "spring", stiffness: 400, damping: 15 }}
@@ -724,12 +801,12 @@ const InteractiveHero: React.FC = () => {
                 animate="visible"
                 className="w-full max-w-4xl mx-auto px-4 sm:px-0"
             >
-                <div className="w-full h-auto rounded-lg shadow-xl border border-gray-700/50 bg-gradient-to-br from-[#0CF2A0]/10 to-transparent p-8 flex items-center justify-center">
+                <div className="w-full h-auto rounded-lg shadow-xl border bg-gradient-to-br p-8 flex items-center justify-center" style={{ borderColor: 'hsl(var(--border) / 0.5)', background: `linear-gradient(to bottom right, hsl(var(--brand) / 0.1), transparent)` }}>
                     <div className="text-center">
-                        <svg className="w-32 h-32 mx-auto mb-4 text-[#0CF2A0]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-32 h-32 mx-auto mb-4" style={{ color: 'hsl(var(--brand) / 0.3)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                         </svg>
-                        <p className="text-gray-500 text-sm">Interactive course graph visualization</p>
+                        <p className="text-muted-foreground text-sm">Interactive course graph visualization</p>
                     </div>
                 </div>
             </motion.div>
