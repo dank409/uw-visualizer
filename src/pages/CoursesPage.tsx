@@ -43,6 +43,7 @@ export function CoursesPage() {
   }
 
   const handleNodeClick = (nodeId: string) => {
+    // Only open drawer for course nodes, not requirement nodes
     const course = getCourse(nodeId)
     if (course) {
       setDrawerCourseCode(course.code)
