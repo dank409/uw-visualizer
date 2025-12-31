@@ -1,4 +1,4 @@
-import { motion } from "framer-motion"
+import { motion, type Variants } from "framer-motion"
 import { CourseSearchCommand } from "./CourseSearchCommand"
 import type { Course } from "@/lib/types"
 
@@ -7,7 +7,7 @@ interface CourseSidebarProps {
   onSelectCourse: (course: Course) => void
 }
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 10 },
   visible: {
     opacity: 1,

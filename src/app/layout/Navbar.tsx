@@ -76,7 +76,7 @@ export function Navbar() {
           className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2 w-full max-w-md"
         >
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
             <input
               ref={inputRef}
               type="text"

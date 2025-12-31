@@ -15,13 +15,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Check localStorage first, default to "light"
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("theme") as Theme | null
-      return stored || "light"
+      if (stored === "dark" || stored === "light") {
+        return stored
+      }
     }
     return "light"
   })
   const [mounted, setMounted] = useState(false)
 
+  // Apply theme immediately on mount to prevent flash
   useEffect(() => {
+    const root = document.documentElement
+    const stored = localStorage.getItem("theme") as Theme | null
+    const initialTheme = (stored === "dark" || stored === "light") ? stored : "light"
+    
+    if (initialTheme === "dark") {
+      root.classList.add("dark")
+    } else {
+      root.classList.remove("dark")
+    }
+    
     setMounted(true)
   }, [])
 

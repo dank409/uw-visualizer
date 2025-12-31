@@ -1,4 +1,3 @@
-import React from 'react';
 import InteractiveHero from "@/components/ui/hero-section-nexus";
 import { Footer } from "@/app/layout/Footer";
 
