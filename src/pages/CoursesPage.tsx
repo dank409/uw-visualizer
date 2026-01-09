@@ -1,12 +1,9 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams } from "react-router-dom"
 import { motion } from "framer-motion"
 import { CourseSidebar } from "@/components/course/CourseSidebar"
-import { GraphCanvas } from "@/components/graph/GraphCanvas"
-import { CourseDetailsDrawer } from "@/components/course/CourseDetailsDrawer"
+import { CanvasGraph } from "@/components/graph/CanvasGraph"
 import { loadCourseIndex, getCourse } from "@/lib/courseIndex"
-import { buildGraph } from "@/lib/graph/buildGraph"
-import { layoutGraph } from "@/lib/graph/layoutDagre"
 import type { Course, CourseCode } from "@/lib/types"
 
 export function CoursesPage() {
@@ -14,8 +11,6 @@ export function CoursesPage() {
   const [loading, setLoading] = useState(true)
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [showGraph, setShowGraph] = useState(false)
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [drawerCourseCode, setDrawerCourseCode] = useState<CourseCode | null>(null)
 
   useEffect(() => {
     loadCourseIndex().then(() => {
@@ -42,27 +37,14 @@ export function CoursesPage() {
     setShowGraph(true)
   }
 
-  const handleNodeClick = (nodeId: string) => {
-    // Only open drawer for course nodes, not requirement nodes
-    const course = getCourse(nodeId)
-    if (course) {
-      setDrawerCourseCode(course.code)
-      setDrawerOpen(true)
-    }
+  const handleNodeClick = (courseCode: CourseCode) => {
+    // Could navigate to that course or do something else
+    console.log("Clicked on:", courseCode)
   }
-
-  const graphData = useMemo(() => {
-    if (!selectedCourse || !showGraph) {
-      return { nodes: [], edges: [] }
-    }
-
-    const courseGraph = buildGraph(selectedCourse.code)
-    return layoutGraph(courseGraph)
-  }, [selectedCourse, showGraph])
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-[calc(100vh-150px)] items-center justify-center bg-background">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -91,7 +73,7 @@ export function CoursesPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-[calc(100vh-150px)] bg-background">
       <CourseSidebar
         selectedCourse={selectedCourse}
         onSelectCourse={handleSelectCourse}
@@ -100,30 +82,29 @@ export function CoursesPage() {
       <div className="flex-1 overflow-hidden">
         {showGraph && selectedCourse ? (
           <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="h-full w-full"
-        >
-          <GraphCanvas
-            nodes={graphData.nodes}
-            edges={graphData.edges}
-            onNodeClick={handleNodeClick}
-          />
-        </motion.div>
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="h-full w-full"
+          >
+            <CanvasGraph
+              targetCode={selectedCourse.code}
+              onNodeClick={handleNodeClick}
+            />
+          </motion.div>
         ) : (
-          <div className="flex h-full items-center justify-center">
+          <div className="flex h-full items-center justify-center bg-[#0a0a0f]">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="text-center text-foreground"
+              className="text-center"
             >
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                className="mb-2 text-lg font-semibold"
+                className="mb-2 text-lg font-semibold text-gray-300"
               >
                 No course selected
               </motion.div>
@@ -131,7 +112,7 @@ export function CoursesPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                className="text-sm text-muted-foreground"
+                className="text-sm text-gray-500"
               >
                 Search for a course to visualize its prerequisites
               </motion.div>
@@ -139,12 +120,6 @@ export function CoursesPage() {
           </div>
         )}
       </div>
-
-      <CourseDetailsDrawer
-        courseCode={drawerCourseCode}
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-      />
     </div>
   )
 }

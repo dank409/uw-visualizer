@@ -8,6 +8,16 @@ export type Prereq =
 
 export type CourseStatus = "completed" | "in_progress" | "not_taken";
 
+// Program/Faculty types
+export type ProgramId = string;
+
+export type Program = {
+  id: ProgramId;
+  name: string;
+  faculty: string;
+  shortName?: string;
+};
+
 export type Course = {
   code: CourseCode;
   title: string;
@@ -18,6 +28,8 @@ export type Course = {
   antireqText?: string;
   department?: string;
   units?: number;
+  allowedPrograms?: ProgramId[]; // Programs that can take this course
+  excludedPrograms?: ProgramId[]; // Programs that cannot take this course
 };
 
 export type RawCourseData = {
