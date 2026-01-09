@@ -11,8 +11,6 @@ UW Visualizer helps students answer questions like:
 
 Instead of parsing dense prerequisite text, the app renders prerequisite structures as an **interactive directed graph** with full AND / OR logic support.
 
-![UW Visualizer Screenshot](https://via.placeholder.com/800x400?text=UW+Visualizer+Screenshot)
-
 ## Features
 
 - 📊 **Interactive Prerequisite Graph** - Visualize course dependencies as an interactive node graph
@@ -22,14 +20,6 @@ Instead of parsing dense prerequisite text, the app renders prerequisite structu
 - 🌓 **Dark/Light Mode** - Toggle between themes
 - 🔍 **Course Search** - Quickly find any course by code or title
 - 📱 **Responsive Design** - Works on desktop browsers
-
-## Tech Stack
-
-- **Frontend**: React 18, TypeScript, Vite
-- **Styling**: Tailwind CSS, CSS Variables
-- **Animations**: Framer Motion
-- **Routing**: React Router v6
-- **Canvas**: Native HTML5 Canvas API for graph rendering
 
 ## Contributing
 
@@ -47,10 +37,11 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
-- University of Waterloo for course data
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Framer Motion](https://www.framer.com/motion/)
-- [Lucide Icons](https://lucide.dev/)
+All course information is sourced from the University of Waterloo Undergraduate Academic Calendar:
+
+https://uwaterloo.ca/academic-calendar/undergraduate-studies/catalog#/home
+
+UW Visualizer is an unofficial planning tool. Always confirm requirements using the official calendar and your academic advisor when needed.
 
 ---
 
