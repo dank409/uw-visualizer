@@ -1,0 +1,986 @@
+[
+  {
+    "code": "3G-Anthropology",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-English - Creative & Professional Writing",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-English - Language & Literature",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-English - Literature & Rhetoric",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-English - Rhetoric and Professional Writing",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-English - Rhetoric, Media, & Professional Communication",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-Fine Arts - General Studio Art",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-Gender & Social Justice",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-History",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-Mathematics",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-Music",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-Peace & Conflict Studies",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-Philosophy",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-Political Science",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-Psychology",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-Social Development Studies",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-Sociology",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "3G-Visual Culture",
+    "type": "THREE_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Anthropology",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Economics",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-English - Creative & Professional Writing",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-English - Literature",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-English - Literature & Rhetoric",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-English - Rhetoric and Professional Writing",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-English - Rhetoric, Media, & Professional Communication",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Gender & Social Justice",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-History",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Kinesiology",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Legal Studies",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Music",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Peace & Conflict Studies",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Philosophy",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Political Science",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Psychology",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Recreation & Leisure Studies",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Sexualities, Relationships, & Families",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Social Development Studies",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "4G-Sociology",
+    "type": "FOUR_YEAR_GENERAL"
+  },
+  {
+    "code": "Actuarial Science Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Addictions, Mental Health, & Policy Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Aging Studies Option",
+    "type": "OPTION"
+  },
+  {
+    "code": "Arts & Business",
+    "type": "OTHER"
+  },
+  {
+    "code": "BASc",
+    "type": "OTHER"
+  },
+  {
+    "code": "Biomechanics Option",
+    "type": "OPTION"
+  },
+  {
+    "code": "Biophysics Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Biotechnology/Economics",
+    "type": "OTHER"
+  },
+  {
+    "code": "Black Studies Diploma",
+    "type": "DIPLOMA"
+  },
+  {
+    "code": "CE-Quantum Engineering Specialization",
+    "type": "OPTION"
+  },
+  {
+    "code": "CEC-Aviation Specialization",
+    "type": "OPTION"
+  },
+  {
+    "code": "CS-Bioinformatics Specialization",
+    "type": "OPTION"
+  },
+  {
+    "code": "CS-Digital Hardware Specialization",
+    "type": "OPTION"
+  },
+  {
+    "code": "Chemical Physics",
+    "type": "OTHER"
+  },
+  {
+    "code": "Computer Engineering Option",
+    "type": "OPTION"
+  },
+  {
+    "code": "Computer Science Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Computing Option",
+    "type": "OPTION"
+  },
+  {
+    "code": "Degree Reqs: BA (Arts)",
+    "type": "OTHER"
+  },
+  {
+    "code": "EE-Quantum Engineering Specialization",
+    "type": "OPTION"
+  },
+  {
+    "code": "Earth Sciences Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Engineering",
+    "type": "OTHER"
+  },
+  {
+    "code": "Entrepreneurship Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Environment, Resources & Sustainability Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Ergonomics & Injury Prevention Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Event Management Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Experiential Education (EDGE) Certificate",
+    "type": "DIPLOMA"
+  },
+  {
+    "code": "Fine Arts Studio Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Fundamentals of Anti-Racist Communication Diploma",
+    "type": "DIPLOMA"
+  },
+  {
+    "code": "G-Aviation Specialization",
+    "type": "OPTION"
+  },
+  {
+    "code": "GEM-Aviation Specialization",
+    "type": "OPTION"
+  },
+  {
+    "code": "Gender & Social Justice Diploma",
+    "type": "DIPLOMA"
+  },
+  {
+    "code": "Gender & Social Justice Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Geochemistry",
+    "type": "OTHER"
+  },
+  {
+    "code": "Geography & Environmental Management Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Gerontology Diploma",
+    "type": "DIPLOMA"
+  },
+  {
+    "code": "Gerontology Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "H-Accounting & Financial Management",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Actuarial Science",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Anthropology",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Applied Mathematics",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Applied Mathematics with Scientific Computing",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Applied Mathematics with Scientific Computing & Scientific Machine Learning",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Architectural Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Architectural Studies",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-BBA & BCS Double Degree",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-BBA & BMath Double Degree",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Biochemistry",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Biochemistry - Biotechnology Specialization",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Biological & Medical Physics",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Biology",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Biomedical Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Biomedical Sciences",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Biostatistics",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Biotechnology/Chartered Professional Accountancy",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Biotechnology/Economics",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Chemical Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Chemistry",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Chemistry - Computational Specialization",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Civil Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Climate & Environmental Change",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Communication Studies",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Computer Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Computer Science (BCS)",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Computer Science (BMath)",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Computing & Financial Management",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Data Science (BCS)",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Data Science (BMath)",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Earth Sciences - Geology Specialization",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Earth Sciences - Geophysics Specialization",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Earth Sciences - Hydrogeology",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Economics",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Electrical Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-English - Creative & Professional Writing",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-English - Literature",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-English - Literature & Rhetoric",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-English - Rhetoric and Professional Writing",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-English - Rhetoric, Media, & Professional Communication",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Environment & Business",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Environment, Resources & Sustainability",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Environmental Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Environmental Sciences - Ecology Specialization",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Environmental Sciences - Geoscience Specialization",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Environmental Sciences - Water Science Specialization",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Fine Arts - Studio Practice",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Gender & Social Justice",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Geography & Aviation",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Geography & Environmental Management",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Geological Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Geomatics",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Global Business & Digital Arts",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Health Sciences",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-History",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Information Technology Management",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-International Development",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Kinesiology",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Knowledge Integration",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Legal Studies",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Management Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Materials & Nanosciences",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Math/FARM - Chartered Financial Analyst Spec",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Math/FARM - Professional Risk Management Spec",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Mathematical Economics (BA)",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Mathematical Economics (BMath)",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Mathematical Finance",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Mathematical Optimization - Business Specialization",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Mathematical Physics (BMath)",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Mathematical Physics (BSc)",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Mathematics/Business Administration",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Mathematics/Chartered Professional Accountancy",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Mathematics/Teaching",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Mechanical Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Mechatronics Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Medicinal Chemistry",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Music",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Nanotechnology Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Peace & Conflict Studies",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Philosophy",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Physics",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Physics & Astronomy",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Planning",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Political Science",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Psychology (BA)",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Psychology (BSc)",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Public Health",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Recreation & Business",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Recreation & Leisure Studies",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Recreation & Sport Business",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Recreation, Leadership & Health",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Religion, Culture, & Spirituality",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Science & Aviation",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Science & Business",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Science & Business - Biochemistry Specialization",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Science & Business - Biology Specialization",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Science & Business - Biotechnology Specialization",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Science-Biotechnology/Economics",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Sexualities, Relationships, & Families",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Social Development Studies",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Social Work",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Sociology",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Software Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Sport & Recreation Management",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Statistics",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Sustainability & Financial Management",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Systems Design Engineering",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Theatre & Performance",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Therapeutic Recreation",
+    "type": "HONOURS"
+  },
+  {
+    "code": "H-Visual Culture",
+    "type": "HONOURS"
+  },
+  {
+    "code": "Health Informatics Option",
+    "type": "OPTION"
+  },
+  {
+    "code": "Health Promotion",
+    "type": "OTHER"
+  },
+  {
+    "code": "Health Studies",
+    "type": "OTHER"
+  },
+  {
+    "code": "History Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Hnours Life Physics (Biophysics Specialization)",
+    "type": "OPTION"
+  },
+  {
+    "code": "Honours Life Physics - Biophysics Specialization",
+    "type": "OPTION"
+  },
+  {
+    "code": "Honours Mathematics program",
+    "type": "OTHER"
+  },
+  {
+    "code": "Honours Science plan",
+    "type": "OTHER"
+  },
+  {
+    "code": "Human Nutrition Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Human Resources Management Diploma",
+    "type": "DIPLOMA"
+  },
+  {
+    "code": "Human Resources Management Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "JH-Actuarial Science",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Applied Mathematics",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Biology",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Chemistry",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Computer Science (BCS)",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Computer Science (BMath)",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Earth Sciences",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Environment, Resources & Sustainability",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Geography & Environmental Management",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Geomatics",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Physics",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Recreation & Leisure Studies",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Recreation & Leisure Studies; H-Recreation & Sport Business",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Recreation & Sport Business",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Recreation, Leadership & Health",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Sport & Recreation Management",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Statistics",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "JH-Therapeutic Recreation",
+    "type": "JOINT_HONOURS"
+  },
+  {
+    "code": "Joint Honours Knowledge Integration",
+    "type": "OTHER"
+  },
+  {
+    "code": "Knowledge Integration Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Legal Studies Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Life Physics",
+    "type": "OTHER"
+  },
+  {
+    "code": "Life Physics - Biophysics Specialization",
+    "type": "OPTION"
+  },
+  {
+    "code": "Life Physics - Medical Physics Specialization",
+    "type": "OPTION"
+  },
+  {
+    "code": "MATH/ELAS",
+    "type": "OTHER"
+  },
+  {
+    "code": "Make-Up Psychology",
+    "type": "OTHER"
+  },
+  {
+    "code": "Make-up Psychology",
+    "type": "OTHER"
+  },
+  {
+    "code": "Management Studies Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Math/Business plans",
+    "type": "OTHER"
+  },
+  {
+    "code": "Mathematics",
+    "type": "OTHER"
+  },
+  {
+    "code": "Mathematics Health Informatics Option",
+    "type": "OPTION"
+  },
+  {
+    "code": "Mathematics/BASE",
+    "type": "OTHER"
+  },
+  {
+    "code": "Mechatronics Option",
+    "type": "OPTION"
+  },
+  {
+    "code": "Music Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Optometry",
+    "type": "OTHER"
+  },
+  {
+    "code": "Peace & Conflict Studies Diploma",
+    "type": "DIPLOMA"
+  },
+  {
+    "code": "Peace & Conflict Studies Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Pharmacy",
+    "type": "OTHER"
+  },
+  {
+    "code": "Philosophy Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Political Science Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Quantum Engineering Option",
+    "type": "OPTION"
+  },
+  {
+    "code": "Research Intensive Specialization",
+    "type": "OPTION"
+  },
+  {
+    "code": "Science",
+    "type": "OTHER"
+  },
+  {
+    "code": "Science Biotechnology/Economics",
+    "type": "OTHER"
+  },
+  {
+    "code": "Social Policy & Social Action Specialization",
+    "type": "OPTION"
+  },
+  {
+    "code": "Society, Technology & Values Option",
+    "type": "OPTION"
+  },
+  {
+    "code": "Sociology Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Software Engineering Option",
+    "type": "OPTION"
+  },
+  {
+    "code": "Statistics Minor",
+    "type": "MINOR"
+  },
+  {
+    "code": "Visual Culture in a Global Context Minor",
+    "type": "MINOR"
+  }
+]
