@@ -645,14 +645,26 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
       ctx.setLineDash([])
 
       ctx.fillStyle = group.satisfiedBy ? colors.orLabelSatisfied : colors.orLabelPending
-      ctx.font = "9px system-ui, sans-serif"
+      ctx.font = "600 10px system-ui, sans-serif"
       ctx.textAlign = "center"
       const label = group.satisfiedBy
         ? "✓ satisfied"
         : memberNodes.length > 4
           ? `pick 1 of ${memberNodes.length}${group.gradeMin ? ` (≥${group.gradeMin}%)` : ""}`
           : `pick 1${group.gradeMin ? ` (≥${group.gradeMin}%)` : ""}`
-      ctx.fillText(label, (minX + maxX) / 2, minY - 4)
+
+      const labelX = (minX + maxX) / 2
+      const labelY = minY - 8
+      const metrics = ctx.measureText(label)
+      const labelW = metrics.width + 12
+      const labelH = 16
+
+      ctx.fillStyle = isDark ? "rgba(17, 24, 39, 0.85)" : "rgba(255, 255, 255, 0.9)"
+      roundRect(ctx, labelX - labelW / 2, labelY - labelH + 4, labelW, labelH, 8)
+      ctx.fill()
+
+      ctx.fillStyle = group.satisfiedBy ? colors.orLabelSatisfied : colors.orLabelPending
+      ctx.fillText(label, labelX, labelY - 4)
     }
 
     // Edges
