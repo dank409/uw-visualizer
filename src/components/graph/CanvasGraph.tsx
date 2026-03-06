@@ -140,7 +140,7 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
   const [selectedNode, setSelectedNode] = useState<CourseNode | null>(null)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [showRestrictionsPanel, setShowRestrictionsPanel] = useState(false)
-  const [viewMode, setViewMode] = useState<GraphViewMode>("focus")
+  const [viewMode, setViewMode] = useState<GraphViewMode>("all")
   const [isDragging, setIsDragging] = useState(false)
   const dragStartRef = useRef({ x: 0, y: 0 })
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null)
@@ -543,11 +543,11 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
       childrenByParent.get(edge.to.code)!.push(edge.from.code)
     }
 
-    const visibleNodeCodes = new Set<string>()
-    if (viewMode === "all") {
-      for (const node of nodes) visibleNodeCodes.add(node.code)
-    } else {
-      // Focus mode: show unsatisfied bottlenecks + their path to target
+    const visibleNodeCodes = new Set<string>(nodes.map((node) => node.code))
+
+    const focusNodeCodes = new Set<string>()
+    if (viewMode === "focus") {
+      // Focus mode: emphasize unsatisfied bottlenecks + their path to target, while keeping all nodes visible
       const actionable = nodes.filter((node) => {
         const done = completedCoursesRef.current.has(node.code)
         const prog = inProgressCoursesRef.current.has(node.code)
@@ -560,24 +560,22 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
         const visited = new Set<string>()
         while (current && !visited.has(current)) {
           visited.add(current)
-          visibleNodeCodes.add(current)
+          focusNodeCodes.add(current)
           const parents = parentByChild.get(current)
           if (!parents || parents.length === 0) break
-          // Prioritize showing direct path to target while keeping key alternatives visible
           current = parents[0]
           for (const parent of parents) {
-            if (parent === targetCode) visibleNodeCodes.add(parent)
+            if (parent === targetCode) focusNodeCodes.add(parent)
           }
         }
       }
 
-      // keep one-hop context beneath selected node for exploration
       if (selectedNode) {
         for (const child of childrenByParent.get(selectedNode.code) || []) {
-          visibleNodeCodes.add(child)
+          focusNodeCodes.add(child)
         }
       }
-      visibleNodeCodes.add(targetCode)
+      focusNodeCodes.add(targetCode)
     }
 
     const visibleEdges = edges.filter((edge) => visibleNodeCodes.has(edge.from.code) && visibleNodeCodes.has(edge.to.code))
@@ -663,7 +661,8 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
       const to = edge.to
       const fromDimmed = (from.isNotNeeded || from.isNotForProgram) && !isSatisfied(from.code)
       const depthDistance = Math.max(1, from.level - to.level)
-      const opacity = fromDimmed ? 0.12 : Math.max(0.35, 0.95 - depthDistance * 0.12)
+      const inFocus = viewMode === "all" || (focusNodeCodes.has(from.code) && focusNodeCodes.has(to.code))
+      const opacity = fromDimmed ? 0.1 : inFocus ? Math.max(0.3, 0.9 - depthDistance * 0.1) : 0.12
 
       const bundleOffset = edgeOffsetMap.get(`${from.code}->${to.code}`) || 0
       ctx.beginPath()
@@ -702,7 +701,8 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
       const hovered = hoveredNode?.code === node.code
       const selected = selectedNode?.code === node.code
 
-      const alpha = dimmed ? 0.3 : 1
+      const inFocus = viewMode === "all" || focusNodeCodes.has(node.code)
+      const alpha = dimmed ? 0.28 : inFocus ? 1 : 0.22
 
       // Glow
       if ((hovered || selected) && !dimmed) {
@@ -1007,59 +1007,44 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
   const getEligibilityInfo = () => {
     if (!data) return null
 
-    // Check if target course has enrollment restrictions
     const targetCourse = getCourse(targetCode)
     const enrollmentRestrictions = parseEnrollmentRestriction(targetCourse?.prereqText)
     const hasRestrictions = enrollmentRestrictions.length > 0
-    
-    // Check if target course is accessible to selected program
     const isAccessibleToProgram = isCourseAccessibleToProgram(targetCode, selectedProgram, targetCourse?.prereqText)
-    
-    if (!isAccessibleToProgram && selectedProgram) {
-      const program = getProgram(selectedProgram)
-      return { 
-        eligible: false, 
-        message: `Not available for ${program?.shortName || program?.name || 'your program'}`,
-        programRestricted: true,
-        enrollmentRestrictions
-      }
-    }
+
+    // Academic prerequisite status (separate from program restrictions)
+    let academicEligible = false
+    let academicMessage = "Complete all requirements"
 
     const rule = data.prerequisites
     if (!rule) {
-      return { 
-        eligible: true, 
-        message: "No prerequisites required",
-        hasRestrictions,
-        enrollmentRestrictions
+      academicEligible = true
+      academicMessage = "No prerequisites required"
+    } else if (rule.logic === "OR") {
+      const satisfiedReq = (rule.requirements || []).find((req) => req.type === "course" && req.course_code && isSatisfied(req.course_code))
+      if (satisfiedReq && satisfiedReq.type === "course" && satisfiedReq.course_code) {
+        academicEligible = true
+        academicMessage = `Satisfied by ${satisfiedReq.course_code}`
+      } else {
+        const total = (rule.requirements || []).filter((r) => r.type === "course").length
+        academicMessage = `Complete 1 of ${total} options`
       }
     }
 
-    if (rule.logic === "OR") {
-      for (const req of rule.requirements || []) {
-        if (req.type === "course" && req.course_code && isSatisfied(req.course_code)) {
-          return { 
-            eligible: true, 
-            message: `Satisfied by ${req.course_code}`,
-            hasRestrictions,
-            enrollmentRestrictions
-          }
-        }
-      }
-      const total = (rule.requirements || []).filter((r) => r.type === "course").length
-      return { 
-        eligible: false, 
-        message: `Complete 1 of ${total} options`,
-        hasRestrictions,
-        enrollmentRestrictions
-      }
-    }
+    const finalEligible = academicEligible && isAccessibleToProgram
+    const program = selectedProgram ? getProgram(selectedProgram) : null
 
-    return { 
-      eligible: false, 
-      message: "Complete all requirements",
+    return {
+      eligible: finalEligible,
+      academicEligible,
+      academicMessage,
+      isAccessibleToProgram,
+      programMessage: isAccessibleToProgram
+        ? "Program eligibility satisfied"
+        : `Not available for ${program?.shortName || program?.name || "your program"}`,
+      programRestricted: !isAccessibleToProgram,
       hasRestrictions,
-      enrollmentRestrictions
+      enrollmentRestrictions,
     }
   }
 
@@ -1103,63 +1088,33 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
         }}
       />
 
-      {/* Info Badge - Prerequisites */}
-      {data && eligibility && !eligibility.programRestricted && (
-        <div
-          className={`absolute top-4 left-4 bg-card/95 backdrop-blur-lg p-3 px-4 rounded-xl border shadow-lg max-w-[280px] ${
-            eligibility.eligible 
-              ? "border-[hsl(var(--brand))]/40" 
-              : "border-border"
-          }`}
-        >
-          <h4
-            className={`text-sm font-medium flex items-center gap-1.5 ${
-              eligibility.eligible 
-                ? "text-[hsl(var(--brand))]" 
-                : "text-foreground"
-            }`}
-          >
-            {eligibility.eligible ? "✅" : "📋"} 
-            {eligibility.eligible ? "Eligible" : "Prerequisites"}
+      {/* Info Badge - Academic + Program status */}
+      {data && eligibility && (
+        <div className="absolute top-16 right-4 bg-card/95 backdrop-blur-lg p-3 px-4 rounded-xl border border-border shadow-lg max-w-[340px]">
+          <h4 className={`text-sm font-medium flex items-center gap-1.5 ${eligibility.academicEligible ? "text-[hsl(var(--brand))]" : "text-foreground"}`}>
+            {eligibility.academicEligible ? "✅" : "📋"} Academic prerequisites
           </h4>
-          <p className="text-xs mt-1 text-muted-foreground">
-            {eligibility.message}
-          </p>
+          <p className="text-xs mt-1 text-muted-foreground">{eligibility.academicMessage}</p>
+
+          <div className="mt-2 pt-2 border-t border-border/60">
+            <h5 className={`text-xs font-medium flex items-center gap-1.5 ${eligibility.isAccessibleToProgram ? "text-emerald-500" : "text-red-500"}`}>
+              {eligibility.isAccessibleToProgram ? "🔓" : "🔒"} Program enrollment
+            </h5>
+            <p className="text-xs mt-1 text-muted-foreground">{eligibility.programMessage}</p>
+          </div>
+
+          {eligibility.hasRestrictions && eligibility.enrollmentRestrictions && eligibility.enrollmentRestrictions.length > 0 && (
+            <button
+              onClick={() => setShowRestrictionsPanel(true)}
+              className="mt-3 w-full rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-left text-xs text-amber-600 hover:bg-amber-500/20 transition-colors"
+            >
+              🔒 View enrollment restriction details
+            </button>
+          )}
         </div>
       )}
       
-      {/* Program Restricted Badge - Clickable */}
-      {data && eligibility?.programRestricted && !showRestrictionsPanel && (
-        <button
-          onClick={() => setShowRestrictionsPanel(true)}
-          className="absolute top-4 left-4 bg-red-500/10 hover:bg-red-500/20 backdrop-blur-lg p-3 px-4 rounded-xl border border-red-500/50 shadow-lg max-w-[280px] text-left transition-colors cursor-pointer"
-        >
-          <h4 className="text-sm font-medium flex items-center gap-1.5 text-red-500">
-            ⚠️ Program Restricted
-          </h4>
-          <p className="text-xs mt-1 text-red-400">
-            {eligibility.message}
-          </p>
-          <p className="text-xs mt-1 text-red-400/70">
-            Click to see allowed programs →
-          </p>
-        </button>
-      )}
-      
-      {/* Separate Restriction Badge */}
-      {data && eligibility?.hasRestrictions && eligibility.enrollmentRestrictions && eligibility.enrollmentRestrictions.length > 0 && !showRestrictionsPanel && (
-        <button
-          onClick={() => setShowRestrictionsPanel(true)}
-          className="absolute top-[88px] left-4 bg-amber-500/10 hover:bg-amber-500/20 backdrop-blur-lg p-3 px-4 rounded-xl border border-amber-500/50 shadow-lg max-w-[280px] text-left transition-colors cursor-pointer"
-        >
-          <h4 className="text-sm font-medium flex items-center gap-1.5 text-amber-500">
-            🔒 Restricted to specific programs
-          </h4>
-          <p className="text-xs mt-1 text-amber-500/70">
-            Click for details →
-          </p>
-        </button>
-      )}
+
       
       {/* Restrictions Panel */}
       {showRestrictionsPanel && eligibility?.enrollmentRestrictions && (
@@ -1233,16 +1188,16 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
         <button
           onClick={() => setViewMode("focus")}
           className={`px-3 h-8 rounded text-xs transition-colors ${viewMode === "focus" ? "bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]" : "bg-accent/50 hover:bg-accent text-muted-foreground hover:text-foreground"}`}
-          title="Show only actionable paths"
+          title="Keep all nodes visible, but highlight actionable paths"
         >
-          Focus
+          Highlight path
         </button>
         <button
           onClick={() => setViewMode("all")}
           className={`px-3 h-8 rounded text-xs transition-colors ${viewMode === "all" ? "bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]" : "bg-accent/50 hover:bg-accent text-muted-foreground hover:text-foreground"}`}
-          title="Show full graph"
+          title="Show all nodes and edges with equal emphasis"
         >
-          Full
+          Show all
         </button>
       </div>
 
