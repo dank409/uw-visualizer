@@ -7,7 +7,7 @@ import { loadCourseIndex, getCourse } from "@/lib/courseIndex"
 import type { Course, CourseCode } from "@/lib/types"
 
 export function CoursesPage() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [showGraph, setShowGraph] = useState(false)
@@ -35,6 +35,7 @@ export function CoursesPage() {
   const handleSelectCourse = (course: Course) => {
     setSelectedCourse(course)
     setShowGraph(true)
+    setSearchParams({ course: course.code })
   }
 
   const handleNodeClick = (courseCode: CourseCode) => {
