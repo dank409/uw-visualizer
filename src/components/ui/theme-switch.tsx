@@ -29,8 +29,8 @@ const ThemeSwitch = ({
     <button
       onClick={handleToggle}
       className={cn(
-        "relative flex items-center gap-1 p-1 rounded-full transition-colors",
-        "bg-muted/80 hover:bg-muted border border-border",
+        "relative flex items-center gap-1 p-1 rounded-full transition-colors liquid-glass-soft",
+        "hover:bg-muted/35 border border-border/60",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className
       )}

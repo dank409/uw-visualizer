@@ -15,7 +15,7 @@ export function Footer() {
   const location = useLocation()
 
   return (
-    <footer className="border-t bg-background" style={{ borderColor: 'hsl(var(--border) / 0.5)' }}>
+    <footer className="border-t bg-background/45 backdrop-blur-xl" style={{ borderColor: 'hsl(var(--border) / 0.5)' }}>
       <div className="max-w-screen-xl mx-auto px-6 md:px-10 lg:px-16 py-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-6">

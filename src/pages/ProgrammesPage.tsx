@@ -96,7 +96,7 @@ export function ProgrammesPage() {
           {roadmap.map((item) => {
             const Icon = item.icon
             return (
-              <div key={item.title} className="rounded-xl border border-border bg-card p-4 shadow-sm">
+              <div key={item.title} className="rounded-2xl liquid-glass p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-foreground">
                     <Icon className="h-4 w-4 text-[hsl(var(--brand))]" />
@@ -112,7 +112,7 @@ export function ProgrammesPage() {
           })}
         </motion.div>
 
-        <motion.div variants={itemVariants} className="mt-8 rounded-xl border border-border bg-card p-5">
+        <motion.div variants={itemVariants} className="mt-8 rounded-2xl liquid-glass p-5">
           <h3 className="text-sm font-semibold text-foreground">Initial programme coverage</h3>
           <p className="mt-2 text-sm text-muted-foreground">
             These are the first program tracks being prioritized for full roadmap support.

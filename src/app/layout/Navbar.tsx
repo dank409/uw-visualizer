@@ -60,20 +60,20 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-30 w-full backdrop-blur-md border-b bg-background/95" style={{ borderColor: 'hsl(var(--header-border) / 0.5)' }}>
-      <nav className="relative flex items-center max-w-screen-xl mx-auto h-[70px] px-6 md:px-10 lg:px-16">
+    <header className="sticky top-0 z-30 w-full border-b bg-background/55 backdrop-blur-xl" style={{ borderColor: 'hsl(var(--header-border) / 0.45)' }}>
+      <nav className="relative flex items-center max-w-screen-xl mx-auto h-[74px] px-6 md:px-10 lg:px-16">
         <Link to="/" className="flex items-center flex-shrink-0 absolute left-4 md:left-6 lg:left-8">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="hsl(var(--brand))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M2 17L12 22L22 17" stroke="hsl(var(--brand))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M2 12L12 17L22 12" stroke="hsl(var(--brand))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span className="text-xl font-bold text-foreground ml-2">UW Visualizer</span>
+          <span className="text-xl font-semibold tracking-tight text-foreground ml-2">UW Visualizer</span>
         </Link>
 
         <div 
           ref={searchRef}
-          className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2 w-full max-w-md"
+          className="hidden lg:flex items-center absolute left-1/2 transform -translate-x-1/2 w-full max-w-[520px]"
         >
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
@@ -89,11 +89,11 @@ export function Navbar() {
               onFocus={() => setIsOpen(true)}
               onKeyDown={handleKeyDown}
               placeholder="Search courses by code or title"
-              className="w-full pl-10 pr-4 py-2 rounded-md bg-[hsl(var(--search-bg))] border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(var(--brand))] focus:border-transparent transition-all text-sm"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl liquid-glass-soft text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-[hsl(var(--brand))/0.45] focus:border-transparent transition-all text-sm"
               style={{ borderColor: 'hsl(var(--search-border))' }}
             />
             {isOpen && results.length > 0 && (
-              <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border shadow-xl bg-[hsl(var(--dropdown-bg))]" style={{ borderColor: 'hsl(var(--dropdown-border))' }}>
+              <div className="absolute z-50 mt-2 max-h-64 w-full overflow-auto rounded-xl liquid-glass border" style={{ borderColor: 'hsl(var(--dropdown-border) / 0.65)' }}>
                 {results.map((course: Course, index: number) => (
                   <button
                     key={course.code}
