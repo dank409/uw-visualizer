@@ -117,6 +117,8 @@ interface CanvasGraphProps {
   onNodeClick?: (courseCode: CourseCode) => void
 }
 
+type GraphViewMode = "all" | "focus"
+
 export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -138,6 +140,7 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
   const [selectedNode, setSelectedNode] = useState<CourseNode | null>(null)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [showRestrictionsPanel, setShowRestrictionsPanel] = useState(false)
+  const [viewMode, setViewMode] = useState<GraphViewMode>("focus")
   const [isDragging, setIsDragging] = useState(false)
   const dragStartRef = useRef({ x: 0, y: 0 })
   const lastTouchRef = useRef<{ x: number; y: number } | null>(null)
@@ -255,13 +258,14 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
         orGroupId: string | null
       ): CourseNode => {
         if (!nodeMap.has(code)) {
+          const radius = isTarget ? 42 : level <= 1 ? 31 : level <= 2 ? 28 : 25
           const node: CourseNode = {
             code,
             title: title || "",
             level,
             x: 0,
             y: 0,
-            r: isTarget ? 42 : 32,
+            r: radius,
             isTarget,
           }
           nodes.push(node)
@@ -386,15 +390,33 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
       if (!canvas) return { nodes, edges, orGroups }
 
       const arr = Array.from(levels.entries()).sort((a, b) => a[0] - b[0])
-      const levelH = 130
+      const levelH = 145
       const centerX = canvas.width / (2 * window.devicePixelRatio)
-      const startY = 70
+      const startY = 72
+
+      const parentMap = new Map<string, CourseNode[]>()
+      for (const edge of edges) {
+        if (!parentMap.has(edge.from.code)) parentMap.set(edge.from.code, [])
+        parentMap.get(edge.from.code)!.push(edge.to)
+      }
 
       for (const [level, lvlNodes] of arr) {
-        const spacing = Math.min(140, (canvas.width / window.devicePixelRatio - 80) / Math.max(1, lvlNodes.length))
-        const totalW = (lvlNodes.length - 1) * spacing
+        const availableW = canvas.width / window.devicePixelRatio - 120
+        const idealSpacing = lvlNodes.length <= 3 ? 210 : lvlNodes.length <= 6 ? 170 : 145
+        const spacing = Math.max(112, Math.min(idealSpacing, availableW / Math.max(1, lvlNodes.length - 1)))
+
+        const sortedNodes = [...lvlNodes].sort((a, b) => {
+          const aParents = parentMap.get(a.code) || []
+          const bParents = parentMap.get(b.code) || []
+          const aCenter = aParents.length ? aParents.reduce((sum, p) => sum + p.x, 0) / aParents.length : 0
+          const bCenter = bParents.length ? bParents.reduce((sum, p) => sum + p.x, 0) / bParents.length : 0
+          if (aCenter === bCenter) return a.code.localeCompare(b.code)
+          return aCenter - bCenter
+        })
+
+        const totalW = (sortedNodes.length - 1) * spacing
         const startX = centerX - totalW / 2
-        lvlNodes.forEach((node, i) => {
+        sortedNodes.forEach((node, i) => {
           node.x = startX + i * spacing
           node.y = startY + level * levelH
         })
@@ -511,6 +533,72 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
     const orGroups = orGroupsRef.current
     const colors = getColors()
 
+    const parentByChild = new Map<string, string[]>()
+    const childrenByParent = new Map<string, string[]>()
+    for (const edge of edges) {
+      if (!parentByChild.has(edge.from.code)) parentByChild.set(edge.from.code, [])
+      parentByChild.get(edge.from.code)!.push(edge.to.code)
+
+      if (!childrenByParent.has(edge.to.code)) childrenByParent.set(edge.to.code, [])
+      childrenByParent.get(edge.to.code)!.push(edge.from.code)
+    }
+
+    const visibleNodeCodes = new Set<string>()
+    if (viewMode === "all") {
+      for (const node of nodes) visibleNodeCodes.add(node.code)
+    } else {
+      // Focus mode: show unsatisfied bottlenecks + their path to target
+      const actionable = nodes.filter((node) => {
+        const done = completedCoursesRef.current.has(node.code)
+        const prog = inProgressCoursesRef.current.has(node.code)
+        return !done && !prog && !node.isNotNeeded && !node.isNotForProgram
+      })
+
+      const seeds = new Set<string>([targetCode, ...(selectedNode ? [selectedNode.code] : []), ...actionable.map((n) => n.code)])
+      for (const seed of seeds) {
+        let current = seed
+        const visited = new Set<string>()
+        while (current && !visited.has(current)) {
+          visited.add(current)
+          visibleNodeCodes.add(current)
+          const parents = parentByChild.get(current)
+          if (!parents || parents.length === 0) break
+          // Prioritize showing direct path to target while keeping key alternatives visible
+          current = parents[0]
+          for (const parent of parents) {
+            if (parent === targetCode) visibleNodeCodes.add(parent)
+          }
+        }
+      }
+
+      // keep one-hop context beneath selected node for exploration
+      if (selectedNode) {
+        for (const child of childrenByParent.get(selectedNode.code) || []) {
+          visibleNodeCodes.add(child)
+        }
+      }
+      visibleNodeCodes.add(targetCode)
+    }
+
+    const visibleEdges = edges.filter((edge) => visibleNodeCodes.has(edge.from.code) && visibleNodeCodes.has(edge.to.code))
+
+    const edgeGroupMap = new Map<string, Edge[]>()
+    for (const edge of visibleEdges) {
+      const key = `${edge.to.code}`
+      if (!edgeGroupMap.has(key)) edgeGroupMap.set(key, [])
+      edgeGroupMap.get(key)!.push(edge)
+    }
+
+    const edgeOffsetMap = new Map<string, number>()
+    for (const groupedEdges of edgeGroupMap.values()) {
+      const sorted = [...groupedEdges].sort((a, b) => a.from.x - b.from.x)
+      sorted.forEach((edge, index) => {
+        const center = (sorted.length - 1) / 2
+        const offset = (index - center) * 12
+        edgeOffsetMap.set(`${edge.from.code}->${edge.to.code}`, offset)
+      })
+    }
+
     ctx.save()
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
@@ -540,7 +628,7 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
 
     // OR group boxes
     for (const group of orGroups) {
-      const memberNodes = nodes.filter((n) => group.members.includes(n.code))
+      const memberNodes = nodes.filter((n) => group.members.includes(n.code) && visibleNodeCodes.has(n.code))
       if (memberNodes.length < 2) continue
 
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
@@ -563,24 +651,30 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
       ctx.textAlign = "center"
       const label = group.satisfiedBy
         ? "✓ satisfied"
-        : `pick 1${group.gradeMin ? ` (≥${group.gradeMin}%)` : ""}`
+        : memberNodes.length > 4
+          ? `pick 1 of ${memberNodes.length}${group.gradeMin ? ` (≥${group.gradeMin}%)` : ""}`
+          : `pick 1${group.gradeMin ? ` (≥${group.gradeMin}%)` : ""}`
       ctx.fillText(label, (minX + maxX) / 2, minY - 4)
     }
 
     // Edges
-    for (const edge of edges) {
+    for (const edge of visibleEdges) {
       const from = edge.from
       const to = edge.to
       const fromDimmed = (from.isNotNeeded || from.isNotForProgram) && !isSatisfied(from.code)
-      const opacity = fromDimmed ? 0.15 : 1
+      const depthDistance = Math.max(1, from.level - to.level)
+      const opacity = fromDimmed ? 0.12 : Math.max(0.35, 0.95 - depthDistance * 0.12)
 
+      const bundleOffset = edgeOffsetMap.get(`${from.code}->${to.code}`) || 0
       ctx.beginPath()
       ctx.moveTo(from.x, from.y - from.r)
       const midY = (from.y - from.r + to.y + to.r) / 2
-      ctx.bezierCurveTo(from.x, midY, to.x, midY, to.x, to.y + to.r)
+      const c1x = from.x + bundleOffset
+      const c2x = to.x - bundleOffset
+      ctx.bezierCurveTo(c1x, midY, c2x, midY, to.x, to.y + to.r)
 
       ctx.strokeStyle = fromDimmed ? colors.edgeInactive : colors.edgeActive
-      ctx.lineWidth = fromDimmed ? 1 : 1.5
+      ctx.lineWidth = fromDimmed ? 1 : 1.25
       ctx.setLineDash(fromDimmed ? [3, 3] : [])
       ctx.globalAlpha = opacity
       ctx.stroke()
@@ -599,6 +693,7 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
 
     // Nodes
     for (const node of nodes) {
+      if (!visibleNodeCodes.has(node.code)) continue
       const done = completedCoursesRef.current.has(node.code)
       const prog = inProgressCoursesRef.current.has(node.code)
       const notNeeded = node.isNotNeeded && !done && !prog
@@ -666,7 +761,7 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
     }
 
     ctx.restore()
-  }, [scale, offset, hoveredNode, selectedNode, isSatisfied, getColors])
+  }, [scale, offset, hoveredNode, selectedNode, isSatisfied, getColors, viewMode, targetCode])
 
   useEffect(() => {
     draw()
@@ -1131,6 +1226,24 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
         <div className="flex items-center gap-2 text-muted-foreground">
           <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/30" /> Not needed
         </div>
+      </div>
+
+      {/* View Mode Controls */}
+      <div className="absolute top-4 right-4 flex gap-1 bg-card/95 backdrop-blur-lg p-1 rounded-lg border border-border shadow-lg">
+        <button
+          onClick={() => setViewMode("focus")}
+          className={`px-3 h-8 rounded text-xs transition-colors ${viewMode === "focus" ? "bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]" : "bg-accent/50 hover:bg-accent text-muted-foreground hover:text-foreground"}`}
+          title="Show only actionable paths"
+        >
+          Focus
+        </button>
+        <button
+          onClick={() => setViewMode("all")}
+          className={`px-3 h-8 rounded text-xs transition-colors ${viewMode === "all" ? "bg-[hsl(var(--brand))]/20 text-[hsl(var(--brand))]" : "bg-accent/50 hover:bg-accent text-muted-foreground hover:text-foreground"}`}
+          title="Show full graph"
+        >
+          Full
+        </button>
       </div>
 
       {/* Zoom Controls */}
