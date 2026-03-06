@@ -90,6 +90,21 @@ export function CourseSidebar({
     )
   }, [programSearch])
 
+  // De-duplicate programs across grouped sections (e.g., Popular + faculty groups)
+  const groupedPrograms = useMemo(() => {
+    const seen = new Set<ProgramId>()
+
+    return Object.entries(PROGRAMS_BY_FACULTY).map(([faculty, programs]) => {
+      const uniquePrograms = programs.filter((program) => {
+        if (seen.has(program.id)) return false
+        seen.add(program.id)
+        return true
+      })
+
+      return [faculty, uniquePrograms] as const
+    }).filter(([, programs]) => programs.length > 0)
+  }, [])
+
   return (
     <div className="flex h-full w-80 flex-col border-r bg-background/95 backdrop-blur-sm" style={{ borderColor: 'hsl(var(--sidebar-border) / 0.5)' }}>
       {/* Header */}
@@ -196,7 +211,7 @@ export function CourseSidebar({
                   )
                 ) : (
                   /* Programs grouped by faculty */
-                  Object.entries(PROGRAMS_BY_FACULTY).map(([faculty, programs]) => (
+                  groupedPrograms.map(([faculty, programs]) => (
                     <div key={faculty}>
                       <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 sticky top-0">
                         {faculty}
