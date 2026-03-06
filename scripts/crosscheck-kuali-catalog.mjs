@@ -8,6 +8,14 @@ const LOCAL_PATH = new URL("../src/data/courses.clean.json", import.meta.url);
 const normalizeCode = (code = "") => code.replace(/\s+/g, "").toUpperCase();
 const normalizeText = (s = "") => s.trim().replace(/\s+/g, " ").toLowerCase();
 
+const referenceFields = ["prereqCourses", "coreqCourses", "antireqCourses", "crossListed"];
+
+function parseCodeParts(code) {
+  const match = code.match(/^([A-Z]+)(\d+[A-Z]?)$/);
+  if (!match) return { subject: code, number: "" };
+  return { subject: match[1], number: match[2] };
+}
+
 async function main() {
   const [localRaw, remoteRes] = await Promise.all([
     fs.readFile(LOCAL_PATH, "utf8"),
@@ -52,6 +60,32 @@ async function main() {
     }
   }
 
+  // Referential integrity: all prereq/coreq/antireq/cross-listed codes should exist in the known catalog set.
+  const missingReferenceCounts = new Map();
+  for (const course of local) {
+    for (const field of referenceFields) {
+      for (const rawRef of course[field] || []) {
+        const ref = normalizeCode(rawRef);
+        if (!ref) continue;
+        if (!localByCode.has(ref) && !remoteByCode.has(ref)) {
+          missingReferenceCounts.set(ref, (missingReferenceCounts.get(ref) || 0) + 1);
+        }
+      }
+    }
+  }
+
+  const missingReferences = [...missingReferenceCounts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([code, references]) => ({ code, references }));
+
+  const missingReferenceSubjects = [...missingReferences.reduce((acc, row) => {
+    const { subject } = parseCodeParts(row.code);
+    acc.set(subject, (acc.get(subject) || 0) + row.references);
+    return acc;
+  }, new Map()).entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([subject, references]) => ({ subject, references }));
+
   const report = {
     catalogId: CATALOG_ID,
     checkedAtUtc: new Date().toISOString(),
@@ -62,11 +96,14 @@ async function main() {
       missingInRemote: missingInRemote.length,
       titleMismatches: titleMismatches.length,
       pidMismatches: pidMismatches.length,
+      missingReferenceCodes: missingReferences.length,
     },
     missingInLocal,
     missingInRemote,
     titleMismatches,
     pidMismatches,
+    missingReferences,
+    missingReferenceSubjects,
   };
 
   const outPath = new URL("../reports/catalog-crosscheck.json", import.meta.url);
@@ -77,6 +114,16 @@ async function main() {
   console.log(JSON.stringify(report.counts, null, 2));
   if (missingInLocal.length) {
     console.log("Missing in local:", missingInLocal.join(", "));
+  }
+  if (missingReferences.length) {
+    console.log("Top missing referenced codes:");
+    for (const row of missingReferences.slice(0, 20)) {
+      console.log(`- ${row.code}: ${row.references}`);
+    }
+    console.log("Top missing-reference subjects:");
+    for (const row of missingReferenceSubjects.slice(0, 15)) {
+      console.log(`- ${row.subject}: ${row.references}`);
+    }
   }
 }
 
