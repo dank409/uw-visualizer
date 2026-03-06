@@ -582,6 +582,23 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
 
     const visibleEdges = edges.filter((edge) => visibleNodeCodes.has(edge.from.code) && visibleNodeCodes.has(edge.to.code))
 
+    const edgeGroupMap = new Map<string, Edge[]>()
+    for (const edge of visibleEdges) {
+      const key = `${edge.to.code}`
+      if (!edgeGroupMap.has(key)) edgeGroupMap.set(key, [])
+      edgeGroupMap.get(key)!.push(edge)
+    }
+
+    const edgeOffsetMap = new Map<string, number>()
+    for (const groupedEdges of edgeGroupMap.values()) {
+      const sorted = [...groupedEdges].sort((a, b) => a.from.x - b.from.x)
+      sorted.forEach((edge, index) => {
+        const center = (sorted.length - 1) / 2
+        const offset = (index - center) * 12
+        edgeOffsetMap.set(`${edge.from.code}->${edge.to.code}`, offset)
+      })
+    }
+
     ctx.save()
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
@@ -634,7 +651,9 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
       ctx.textAlign = "center"
       const label = group.satisfiedBy
         ? "✓ satisfied"
-        : `pick 1${group.gradeMin ? ` (≥${group.gradeMin}%)` : ""}`
+        : memberNodes.length > 4
+          ? `pick 1 of ${memberNodes.length}${group.gradeMin ? ` (≥${group.gradeMin}%)` : ""}`
+          : `pick 1${group.gradeMin ? ` (≥${group.gradeMin}%)` : ""}`
       ctx.fillText(label, (minX + maxX) / 2, minY - 4)
     }
 
@@ -643,15 +662,19 @@ export function CanvasGraph({ targetCode, onNodeClick }: CanvasGraphProps) {
       const from = edge.from
       const to = edge.to
       const fromDimmed = (from.isNotNeeded || from.isNotForProgram) && !isSatisfied(from.code)
-      const opacity = fromDimmed ? 0.15 : 1
+      const depthDistance = Math.max(1, from.level - to.level)
+      const opacity = fromDimmed ? 0.12 : Math.max(0.35, 0.95 - depthDistance * 0.12)
 
+      const bundleOffset = edgeOffsetMap.get(`${from.code}->${to.code}`) || 0
       ctx.beginPath()
       ctx.moveTo(from.x, from.y - from.r)
       const midY = (from.y - from.r + to.y + to.r) / 2
-      ctx.bezierCurveTo(from.x, midY, to.x, midY, to.x, to.y + to.r)
+      const c1x = from.x + bundleOffset
+      const c2x = to.x - bundleOffset
+      ctx.bezierCurveTo(c1x, midY, c2x, midY, to.x, to.y + to.r)
 
       ctx.strokeStyle = fromDimmed ? colors.edgeInactive : colors.edgeActive
-      ctx.lineWidth = fromDimmed ? 1 : 1.5
+      ctx.lineWidth = fromDimmed ? 1 : 1.25
       ctx.setLineDash(fromDimmed ? [3, 3] : [])
       ctx.globalAlpha = opacity
       ctx.stroke()
