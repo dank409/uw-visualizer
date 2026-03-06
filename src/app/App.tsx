@@ -4,10 +4,12 @@ import { router } from "./routes"
 import { ThemeProvider } from "@/lib/theme-provider"
 
 export function App() {
+  const isProd = Boolean((import.meta as any)?.env?.PROD)
+
   return (
     <ThemeProvider>
       <RouterProvider router={router} />
-      <Analytics />
+      {isProd ? <Analytics /> : null}
     </ThemeProvider>
   )
 }
