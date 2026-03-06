@@ -47,3 +47,4 @@ UW Visualizer is an unofficial planning tool. Always confirm requirements using 
 
 Made with ❤️ for UWaterloo students
 
+
