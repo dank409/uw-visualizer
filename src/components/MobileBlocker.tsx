@@ -5,7 +5,8 @@ export function MobileBlocker() {
 
   useEffect(() => {
     const checkMobile = () => {
-      const isSmallScreen = window.innerWidth < 1024;
+      // Only block very small screens (phones). Allow tablets/smaller laptops.
+      const isSmallScreen = window.innerWidth < 768;
       setIsMobile(isSmallScreen);
     };
 
