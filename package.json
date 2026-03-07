@@ -7,7 +7,9 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "crosscheck:catalog": "node scripts/crosscheck-kuali-catalog.mjs"
+    "crosscheck:catalog": "node scripts/crosscheck-kuali-catalog.mjs",
+    "test:parser": "tsx tests/parser.test.ts",
+    "qa:heartbeat": "npm run build && npm run test:parser"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.0.5",
@@ -43,6 +45,8 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",
+    "tsx": "^4.20.5",
+    "jsdom": "^26.1.0",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
   }

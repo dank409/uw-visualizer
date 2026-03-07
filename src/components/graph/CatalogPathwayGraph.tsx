@@ -169,6 +169,7 @@ export function CatalogPathwayGraph({
         fitViewOptions={{ padding: 0.24 }}
         minZoom={0.2}
         maxZoom={1.8}
+        onlyRenderVisibleElements
         proOptions={{ hideAttribution: true }}
         onInit={setRf}
         onNodeClick={(_, n) => onSelectCode?.(n.id)}
