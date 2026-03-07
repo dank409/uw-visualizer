@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react"
-import { Search, AlertTriangle } from "lucide-react"
+import { AlertTriangle } from "lucide-react"
 import { useSearchParams } from "react-router-dom"
 import { CatalogPathwayGraph } from "@/components/graph/CatalogPathwayGraph"
 import {
   buildCourseTreeFromCatalog,
   clearCatalogCache,
-  resolveCourseByCode,
   searchCatalogCourses,
   type CatalogCourseSearchItem,
   type CourseNodeData,
@@ -218,9 +217,6 @@ function parseTrackerGroups(html?: string): RequirementGroup[] {
 
 export function CoursesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [query, setQuery] = useState("")
-  const [results, setResults] = useState<CatalogCourseSearchItem[]>([])
-  const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -279,21 +275,6 @@ export function CoursesPage() {
     }
   }, [targetCode])
 
-  useEffect(() => {
-    const q = query.trim()
-    if (!q) {
-      setResults([])
-      return
-    }
-
-    const handle = setTimeout(() => {
-      searchCatalogCourses(q)
-        .then((r) => setResults(r.slice(0, 12)))
-        .catch(() => setResults([]))
-    }, 180)
-
-    return () => clearTimeout(handle)
-  }, [query])
 
   const selected = useMemo(() => (selectedCode ? courseMap.get(selectedCode) || null : null), [selectedCode, courseMap])
   const target = useMemo(() => (targetCode ? courseMap.get(targetCode) || null : null), [targetCode, courseMap])
@@ -453,17 +434,6 @@ export function CoursesPage() {
       }))
   }, [target, courseMap])
 
-  const selectResult = async (item: CatalogCourseSearchItem) => {
-    const code = normalize(item.__catalogCourseId)
-    setQuery("")
-    setOpen(false)
-    setSearchParams({ course: code })
-
-    const exact = await resolveCourseByCode(code)
-    if (!exact) {
-      setError(`Official catalog could not resolve ${code}. Please verify directly on the calendar site.`)
-    }
-  }
 
   const upsertSavedCourse = (code: string, status: SavedCourseStatus) => {
     const normalized = normalize(code)
@@ -524,28 +494,8 @@ export function CoursesPage() {
           <h1 className="text-xl font-semibold">UWVisualizer</h1>
           <p className="mt-1 text-sm text-muted-foreground">Official-data course pathway visualizer for UWaterloo.</p>
 
-          <div className="relative mt-4">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value)
-                setOpen(true)
-              }}
-              onFocus={() => setOpen(true)}
-              placeholder="Search course (e.g., MATH237)"
-              className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--brand))/0.35]"
-            />
-            {open && results.length > 0 ? (
-              <div className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-border bg-popover shadow-lg">
-                {results.map((c) => (
-                  <button key={c.id} onClick={() => selectResult(c)} className="w-full px-3 py-2 text-left hover:bg-accent">
-                    <div className="text-sm font-semibold">{normalize(c.__catalogCourseId)}</div>
-                    <div className="text-xs text-muted-foreground line-clamp-1">{c.title}</div>
-                  </button>
-                ))}
-              </div>
-            ) : null}
+          <div className="mt-4 rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+            Use the top navigation search to find and jump to any course (same behavior across homepage and course pages).
           </div>
 
           {loading ? <p className="mt-4 text-sm text-muted-foreground">Fetching official catalog data…</p> : null}
@@ -555,6 +505,24 @@ export function CoursesPage() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Target course</div>
               <div className="mt-1 font-semibold">{target.code}</div>
               <div className="text-sm text-muted-foreground">{target.title}</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <a
+                  href={target.catalogUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-md border border-[hsl(var(--brand))/0.55] bg-[hsl(var(--brand))/0.18] px-2.5 py-1 text-[11px] font-medium text-black hover:bg-[hsl(var(--brand))/0.28]"
+                >
+                  📅 Open Official Calendar Page
+                </a>
+                <a
+                  href={`https://uwflow.com/course/${target.code.toLowerCase()}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-md border border-[hsl(var(--brand))/0.55] bg-[hsl(var(--brand))/0.18] px-2.5 py-1 text-[11px] font-medium text-black hover:bg-[hsl(var(--brand))/0.28]"
+                >
+                  ⭐ See Reviews & Ratings on UWFlow
+                </a>
+              </div>
               <div className="mt-2 text-xs text-muted-foreground">Nodes shown: {courseMap.size} (depth-limited to 4 levels)</div>
             </div>
           ) : null}
@@ -761,18 +729,7 @@ export function CoursesPage() {
               <div>
                 <h2 className="text-lg font-semibold">{selected.code}</h2>
                 <p className="text-sm text-muted-foreground">{selected.title}</p>
-                <a
-                  href={`https://uwflow.com/course/${selected.code.toLowerCase()}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 inline-block rounded-md border border-[hsl(var(--brand))/0.55] bg-[hsl(var(--brand))/0.16] px-2.5 py-1 text-xs font-medium text-[hsl(var(--brand-dark))] underline decoration-[hsl(var(--brand-dark))]/60"
-                >
-                  {selected.code} — See reviews, ratings & stats on UWFlow →
-                </a>
                 {summarySentence ? <p className="mt-2 text-xs text-muted-foreground">{summarySentence}</p> : null}
-                <a href={selected.catalogUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs text-[hsl(var(--brand-dark))] underline">
-                  Open official calendar page
-                </a>
               </div>
 
               <div className="rounded-lg border border-border bg-muted/20 p-3">
