@@ -515,7 +515,7 @@ export function CoursesPage() {
                   href={target.catalogUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg border border-[hsl(var(--brand))/0.65] bg-[hsl(var(--brand))] px-4 py-3 text-center text-sm md:text-base font-bold text-black shadow-sm transition hover:scale-[1.02] hover:shadow-[0_0_16px_hsl(var(--brand)/0.5)]"
+                  className="rounded-lg border border-[hsl(var(--brand))/0.65] bg-[hsl(var(--brand))] px-3 py-2 text-center text-xs md:text-sm font-semibold text-black shadow-sm transition hover:scale-[1.01] hover:shadow-[0_0_12px_hsl(var(--brand)/0.45)]"
                 >
                   📅 Open Official Calendar Page
                 </a>
@@ -523,7 +523,7 @@ export function CoursesPage() {
                   href={`https://uwflow.com/course/${target.code.toLowerCase()}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg border border-[hsl(var(--brand))/0.65] bg-[hsl(var(--brand))] px-4 py-3 text-center text-sm md:text-base font-bold text-black shadow-sm transition hover:scale-[1.02] hover:shadow-[0_0_16px_hsl(var(--brand)/0.5)]"
+                  className="rounded-lg border border-[hsl(var(--brand))/0.65] bg-[hsl(var(--brand))] px-3 py-2 text-center text-xs md:text-sm font-semibold text-black shadow-sm transition hover:scale-[1.01] hover:shadow-[0_0_12px_hsl(var(--brand)/0.45)]"
                 >
                   ⭐ See Reviews & Ratings on UWFlow
                 </a>

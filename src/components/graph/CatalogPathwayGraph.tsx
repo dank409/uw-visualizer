@@ -52,6 +52,7 @@ export function CatalogPathwayGraph({
   onSelectCode?: (code: string) => void
 }) {
   const [rf, setRf] = useState<ReactFlowInstance | null>(null)
+  const [focusedMode, setFocusedMode] = useState(true)
 
   const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark")
 
@@ -59,16 +60,36 @@ export function CatalogPathwayGraph({
     const nodeList: Node[] = []
     const edgeList: Edge[] = []
 
+    const dist = new Map<string, number>()
+    const queue: Array<{ code: string; d: number }> = [{ code: targetCode, d: 0 }]
+    while (queue.length) {
+      const { code, d } = queue.shift()!
+      if (dist.has(code) && (dist.get(code) as number) <= d) continue
+      dist.set(code, d)
+      const node = courseMap.get(code)
+      if (!node) continue
+      for (const p of node.prerequisiteCodes) queue.push({ code: p, d: d + 1 })
+    }
+
+    const focusVisible = new Set<string>()
+    for (const [code, d] of dist.entries()) {
+      if (d <= 2) focusVisible.add(code)
+    }
+    focusVisible.add(targetCode)
+    completedCodes?.forEach((c) => focusVisible.add(c))
+    directCompletedCodes?.forEach((c) => focusVisible.add(c))
+
     for (const course of courseMap.values()) {
       const isTarget = course.code === targetCode
       const isCompleted = completedCodes?.has(course.code)
       const isDirect = directCompletedCodes?.has(course.code)
       const isAssumed = Boolean(isCompleted && !isDirect)
+      const focusHidden = focusedMode && !focusVisible.has(course.code)
       nodeList.push({
         id: course.code,
         data: { label: `${course.code}\n${course.title}${isAssumed ? "\n(assumed prereq)" : ""}` },
         type: "default",
-        hidden: hiddenCodes?.has(course.code) || false,
+        hidden: (hiddenCodes?.has(course.code) || focusHidden) || false,
         position: { x: 0, y: 0 },
         style: {
           width: isTarget ? Math.round(NODE_W * 1.5) : NODE_W,
@@ -95,11 +116,12 @@ export function CatalogPathwayGraph({
       for (const prereq of course.prerequisiteCodes) {
         if (!courseMap.has(prereq)) continue
         const pathSatisfied = Boolean(completedCodes?.has(prereq) || completedCodes?.has(course.code))
+        const edgeFocusHidden = focusedMode && (!focusVisible.has(prereq) || !focusVisible.has(course.code))
         edgeList.push({
           id: `${prereq}->${course.code}`,
           source: prereq,
           target: course.code,
-          hidden: (hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code)) || false,
+          hidden: (hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code) || edgeFocusHidden) || false,
           animated: false,
           style: {
             stroke: pathSatisfied ? "hsl(42 90% 46%)" : "hsl(42 55% 42%)",
@@ -111,7 +133,7 @@ export function CatalogPathwayGraph({
     }
 
     return { nodes: getLayouted(nodeList, edgeList), edges: edgeList }
-  }, [courseMap, targetCode, isDark, completedCodes, directCompletedCodes, hiddenCodes])
+  }, [courseMap, targetCode, isDark, completedCodes, directCompletedCodes, hiddenCodes, focusedMode])
 
   const comfortableZoom = nodes.length > 20 ? 0.78 : nodes.length > 12 ? 0.86 : 0.96
 
@@ -157,6 +179,12 @@ export function CatalogPathwayGraph({
       </ReactFlow>
 
       <div className="absolute right-3 top-3 z-20 flex gap-2">
+        <button
+          onClick={() => setFocusedMode((v) => !v)}
+          className="rounded-md border border-border bg-card/90 px-2 py-1 text-xs hover:bg-accent"
+        >
+          {focusedMode ? "Focused" : "Full"}
+        </button>
         <button
           onClick={() => rf?.fitView({ padding: 0.24, duration: 300 })}
           className="rounded-md border border-border bg-card/90 px-2 py-1 text-xs hover:bg-accent"
