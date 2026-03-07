@@ -12,12 +12,13 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    // Check localStorage first, default to "light"
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("theme") as Theme | null
       if (stored === "dark" || stored === "light") {
         return stored
       }
+      const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches
+      return prefersDark ? "dark" : "light"
     }
     return "light"
   })
@@ -27,7 +28,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement
     const stored = localStorage.getItem("theme") as Theme | null
-    const initialTheme = (stored === "dark" || stored === "light") ? stored : "light"
+    const systemPrefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches
+    const initialTheme = (stored === "dark" || stored === "light") ? stored : (systemPrefersDark ? "dark" : "light")
     
     if (initialTheme === "dark") {
       root.classList.add("dark")

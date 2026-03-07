@@ -39,10 +39,12 @@ function getLayouted(nodes: Node[], edges: Edge[]) {
 export function CatalogPathwayGraph({
   targetCode,
   courseMap,
+  completedCodes,
   onSelectCode,
 }: {
   targetCode: string
   courseMap: Map<string, CourseNodeData>
+  completedCodes?: Set<string>
   onSelectCode?: (code: string) => void
 }) {
   const [rf, setRf] = useState<ReactFlowInstance | null>(null)
@@ -55,18 +57,20 @@ export function CatalogPathwayGraph({
 
     for (const course of courseMap.values()) {
       const isTarget = course.code === targetCode
+      const isCompleted = completedCodes?.has(course.code)
       nodeList.push({
         id: course.code,
         data: { label: `${course.code}\n${course.title}` },
         type: "default",
         position: { x: 0, y: 0 },
         style: {
-          width: isTarget ? NODE_W + 12 : NODE_W,
+          width: isTarget ? Math.round(NODE_W * 1.5) : NODE_W,
           borderRadius: 14,
-          border: isTarget ? "2px solid hsl(var(--brand))" : "1px solid hsl(var(--border))",
+          border: isTarget ? "3px solid hsl(var(--brand))" : "1px solid hsl(var(--border))",
           background: isDark ? "hsl(var(--card) / 0.98)" : "hsl(var(--card) / 0.98)",
           color: "hsl(var(--foreground))",
-          boxShadow: isTarget ? "0 0 0 3px hsl(var(--brand) / 0.22), 0 8px 20px hsl(172 88% 40% / 0.18)" : "0 2px 8px hsl(220 20% 20% / 0.08)",
+          opacity: isCompleted ? 0.45 : 1,
+          boxShadow: isTarget ? "0 0 0 4px hsl(var(--brand) / 0.2), 0 10px 24px hsl(172 88% 40% / 0.2)" : "0 2px 8px hsl(220 20% 20% / 0.08)",
           fontSize: 12,
           lineHeight: 1.25,
           whiteSpace: "pre-wrap",
@@ -75,30 +79,45 @@ export function CatalogPathwayGraph({
 
       for (const prereq of course.prerequisiteCodes) {
         if (!courseMap.has(prereq)) continue
+        const incomingSatisfied = completedCodes?.has(course.code)
         edgeList.push({
           id: `${prereq}->${course.code}`,
           source: prereq,
           target: course.code,
           animated: false,
-          style: { stroke: "hsl(142 46% 45%)", strokeWidth: 1.9 },
+          style: {
+            stroke: "hsl(142 46% 45%)",
+            strokeWidth: 1.9,
+            opacity: incomingSatisfied ? 0.25 : 1,
+          },
         })
       }
     }
 
     return { nodes: getLayouted(nodeList, edgeList), edges: edgeList }
-  }, [courseMap, targetCode, isDark])
+  }, [courseMap, targetCode, isDark, completedCodes])
+
+  const comfortableZoom = nodes.length > 20 ? 0.78 : nodes.length > 12 ? 0.86 : 0.96
 
   useEffect(() => {
     if (!rf || nodes.length === 0) return
-    rf.fitView({ padding: 0.24, duration: 300 })
-  }, [rf, nodes])
+    rf.fitView({ padding: 0.3, duration: 280 })
+    const targetNode = nodes.find((n) => n.id === targetCode)
+    if (!targetNode) return
+    setTimeout(() => {
+      rf.setCenter(targetNode.position.x + NODE_W / 2, targetNode.position.y + NODE_H / 2, {
+        zoom: comfortableZoom,
+        duration: 260,
+      })
+    }, 290)
+  }, [rf, nodes, targetCode, comfortableZoom])
 
   const centerTarget = () => {
     if (!rf) return
     const targetNode = nodes.find((n) => n.id === targetCode)
     if (!targetNode) return
     rf.setCenter(targetNode.position.x + NODE_W / 2, targetNode.position.y + NODE_H / 2, {
-      zoom: Math.min(1.1, rf.getZoom() || 1.1),
+      zoom: comfortableZoom,
       duration: 320,
     })
   }

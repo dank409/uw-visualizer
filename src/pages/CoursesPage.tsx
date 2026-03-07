@@ -15,6 +15,35 @@ function normalize(code: string) {
   return code.replace(/\s+/g, "").toUpperCase()
 }
 
+function parseGradeRules(html?: string) {
+  const out = new Map<string, number>()
+  if (!html) return out
+
+  const doc = new DOMParser().parseFromString(html, "text/html")
+  const rows = Array.from(doc.querySelectorAll('[data-test$="-result"]'))
+  for (const row of rows) {
+    const text = (row.textContent || "").replace(/\s+/g, " ")
+    const g = text.match(/minimum grade of\s*(\d+)%/i)
+    if (!g) continue
+    const grade = Number(g[1])
+    const anchors = Array.from(row.querySelectorAll("a"))
+      .map((a) => normalize(a.textContent || ""))
+      .filter(Boolean)
+    for (const code of anchors) out.set(code, grade)
+  }
+  return out
+}
+
+function makeSummarySentence(code: string, prereqCodes: string[], html?: string) {
+  if (!code) return ""
+  const grades = [...parseGradeRules(html).values()]
+  const gradePhrase = grades.length
+    ? `${Math.min(...grades)}–${Math.max(...grades)}% minimum grades may apply`
+    : "grade minimums may apply"
+  const programReq = html && /enrolled in/i.test(html) ? "plus program enrollment conditions" : ""
+  return `${code} requires ${Math.max(1, prereqCodes.length)} prerequisite option(s), ${gradePhrase}${programReq ? `, ${programReq}` : ""}.`
+}
+
 
 export function CoursesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -27,6 +56,7 @@ export function CoursesPage() {
   const [targetCode, setTargetCode] = useState("")
   const [courseMap, setCourseMap] = useState<Map<string, CourseNodeData>>(new Map())
   const [selectedCode, setSelectedCode] = useState("")
+  const [completedCodes, setCompletedCodes] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const code = searchParams.get("course")
@@ -46,6 +76,7 @@ export function CoursesPage() {
         if (!active) return
         setCourseMap(map)
         setSelectedCode(targetCode)
+        setCompletedCodes(new Set())
       })
       .catch((e) => {
         if (!active) return
@@ -95,6 +126,27 @@ export function CoursesPage() {
       .filter((c): c is CourseNodeData => Boolean(c))
   }, [target, courseMap])
 
+  const summarySentence = useMemo(
+    () => (target ? makeSummarySentence(target.code, target.prerequisiteCodes, target.prerequisitesHtml) : ""),
+    [target]
+  )
+
+  const selectedChecklist = useMemo(() => {
+    if (!selected) return [] as Array<{ code: string; title: string; gradeMin?: number }>
+    const gradeMap = parseGradeRules(selected.prerequisitesHtml)
+    return selected.prerequisiteCodes.map((code) => ({
+      code,
+      title: courseMap.get(code)?.title || "Course",
+      gradeMin: gradeMap.get(code),
+    }))
+  }, [selected, courseMap])
+
+  const progress = useMemo(() => {
+    const total = selectedChecklist.length
+    const done = selectedChecklist.filter((r) => completedCodes.has(r.code)).length
+    return { total, done, pct: total ? Math.round((done / total) * 100) : 0 }
+  }, [selectedChecklist, completedCodes])
+
   const mobileLevels = useMemo(() => {
     if (!target) return [] as Array<{ level: number; courses: CourseNodeData[] }>
 
@@ -143,6 +195,11 @@ export function CoursesPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
+      {error ? (
+        <div className="mb-4 rounded-xl border-2 border-red-400 bg-red-50 p-4 text-sm text-red-800">
+          <strong>Official data error:</strong> {error}
+        </div>
+      ) : null}
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         <section className="rounded-xl border border-border bg-card p-4 h-fit">
           <h1 className="text-xl font-semibold">UWVisualizer</h1>
@@ -179,9 +236,6 @@ export function CoursesPage() {
           </div>
 
           {loading ? <p className="mt-4 text-sm text-muted-foreground">Fetching official catalog data…</p> : null}
-          {error ? (
-            <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-700">{error}</div>
-          ) : null}
 
           {target ? (
             <div className="mt-4 rounded-lg border border-border bg-muted/30 p-3">
@@ -222,6 +276,7 @@ export function CoursesPage() {
                 <CatalogPathwayGraph
                   targetCode={targetCode}
                   courseMap={courseMap}
+                  completedCodes={completedCodes}
                   onSelectCode={(code) => setSelectedCode(code)}
                 />
               </div>
@@ -284,11 +339,8 @@ export function CoursesPage() {
               <div>
                 <h2 className="text-lg font-semibold">{selected.code}</h2>
                 <p className="text-sm text-muted-foreground">{selected.title}</p>
-                {target ? (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    To enroll in {target.code}, complete one of {Math.max(1, target.prerequisiteCodes.length)} immediate prerequisite options
-                    and satisfy all official grade/program conditions shown below.
-                  </p>
+                {summarySentence ? (
+                  <p className="mt-2 text-xs text-muted-foreground">{summarySentence}</p>
                 ) : null}
                 <a
                   href={selected.catalogUrl}
@@ -298,6 +350,53 @@ export function CoursesPage() {
                 >
                   Open official calendar page
                 </a>
+              </div>
+
+              <div className="rounded-lg border border-border bg-muted/20 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold">Interactive prerequisite tracker</h3>
+                  <button
+                    onClick={() => setCompletedCodes(new Set())}
+                    className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-accent"
+                  >
+                    Reset completed courses
+                  </button>
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">{progress.done} of {progress.total} requirement options satisfied</div>
+                <div className="mt-2 h-2 w-full rounded-full bg-background border border-border overflow-hidden">
+                  <div className="h-full bg-[hsl(var(--brand))] transition-all" style={{ width: `${progress.pct}%` }} />
+                </div>
+
+                {selectedChecklist.length > 0 ? (
+                  <div className="mt-3 space-y-2">
+                    {selectedChecklist.map((r) => {
+                      const checked = completedCodes.has(r.code)
+                      return (
+                        <label key={r.code} className={`flex items-start gap-2 rounded-md border px-2 py-1.5 text-xs ${checked ? "border-[hsl(var(--brand))/0.45] bg-[hsl(var(--brand))/0.08]" : "border-border bg-background"}`}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              setCompletedCodes((prev) => {
+                                const next = new Set(prev)
+                                if (e.target.checked) next.add(r.code)
+                                else next.delete(r.code)
+                                return next
+                              })
+                            }}
+                            className="mt-0.5"
+                          />
+                          <span>
+                            <strong>{r.code}</strong> — {r.title}
+                            {r.gradeMin ? <span className="text-amber-600"> (min {r.gradeMin}%)</span> : null}
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">No parsed prerequisite course options for this selected node.</p>
+                )}
               </div>
 
               <div className="rounded-lg border border-border bg-muted/20 p-3">
