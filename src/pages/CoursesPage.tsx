@@ -121,98 +121,82 @@ function parseTrackerGroups(html?: string): RequirementGroup[] {
     const programs = anchors.filter((a) => !isCourseCode(a))
     const gradeMatch = text.match(/minimum grade of\s*(\d+)%/i)
     const gradeMin = gradeMatch ? Number(gradeMatch[1]) : undefined
-    return { idx, text, courses, programs, gradeMin }
+    const mode: "any" | "all" = /at least\s*1|complete\s*1\s*of|one\s*of\s*the\s*following/i.test(text)
+      ? "any"
+      : "all"
+    return { idx, text, courses, programs, gradeMin, mode }
   })
 
-  const used = new Set<number>()
+  const relevant = rows.filter((r) => !/not completed nor concurrently enrolled/i.test(r.text))
   const groups: RequirementGroup[] = []
 
-  // 1) Linear algebra style row: at least 1 with many course options
-  const linear = rows.find((r) => /at least\s*1\s*of the following/i.test(r.text) && r.courses.length > 1)
-  if (linear) {
-    used.add(linear.idx)
-    groups.push({
-      id: "linear",
-      title: "Linear Algebra (at least 1 required)",
-      mode: "any",
-      options: linear.courses.map((c) => ({ id: `course:${c}`, label: c, kind: "course", code: c })),
-    })
-  }
-
-  // 2) Calculus variant rows: appears in many UW rules as a "Complete 1 of following" block with 1-course rows
-  const hasOneOfBlock = /Complete\s*(?:<!--\s*-->)?\s*1\s*(?:<!--\s*-->)?\s*of the following/i.test(html)
-  const calcCandidateRows = rows.filter(
-    (r) =>
-      !used.has(r.idx) &&
-      !/enrolled in/i.test(r.text) &&
-      r.courses.length >= 1 &&
-      (/minimum grade/i.test(r.text) || /Must have completed the following/i.test(r.text))
-  )
-
-  if (hasOneOfBlock && calcCandidateRows.length >= 2) {
-    calcCandidateRows.forEach((r) => used.add(r.idx))
-    const calcOptions = calcCandidateRows.flatMap((r) =>
-      r.courses.map((c) => ({ id: `course:${c}`, label: c, kind: "course" as const, code: c, gradeMin: r.gradeMin }))
-    )
-    const dedup = new Map(calcOptions.map((o) => [o.id, o]))
-    groups.push({
-      id: "calc2",
-      title: "Calculus 2 path (one variant)",
-      mode: "any",
-      options: [...dedup.values()],
-    })
-  }
-
-  // 3) Program rows
-  const programRows = rows.filter((r) => /enrolled in/i.test(r.text))
-  if (programRows.length > 0) {
-    programRows.forEach((r) => used.add(r.idx))
-    const programOptions: RequirementOption[] = []
-
-    for (const row of programRows) {
-      if (row.programs.length) {
-        row.programs.forEach((p) => {
-          const id = `program:${p.toLowerCase()}`
-          if (!programOptions.find((x) => x.id === id)) {
-            programOptions.push({ id, label: p, kind: "program" })
-          }
-        })
-      } else {
-        const m = row.text.match(/Enrolled in\s*(.+)$/i)
-        const label = m ? m[1] : row.text
-        const id = `program:${label.toLowerCase()}`
-        if (!programOptions.find((x) => x.id === id)) {
-          programOptions.push({ id, label, kind: "program" })
-        }
-      }
+  const titleFromSubjects = (courses: string[], mode: "any" | "all") => {
+    const counts = new Map<string, number>()
+    for (const c of courses) {
+      const m = c.match(/^([A-Z]+)/)
+      const subj = m ? m[1] : "COURSE"
+      counts.set(subj, (counts.get(subj) || 0) + 1)
     }
+    const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1])
+    if (ranked.length === 0) return mode === "any" ? "Course options (choose 1)" : "Course requirements"
+    if (ranked.length === 1) return `${ranked[0][0]} ${mode === "any" ? "options (choose 1)" : "requirements"}`
+    return `${ranked[0][0]}/${ranked[1][0]} ${mode === "any" ? "options (choose 1)" : "requirements"}`
+  }
 
-    if (programOptions.length) {
-      groups.push({
-        id: "program",
-        title: "Program enrollment (one required)",
-        mode: "any",
-        options: programOptions,
+  for (const row of relevant) {
+    const options: RequirementOption[] = []
+
+    for (const c of row.courses) {
+      options.push({
+        id: `course:${c}`,
+        label: c,
+        kind: "course",
+        code: c,
+        gradeMin: row.gradeMin,
       })
     }
-  }
 
-  // 4) Fallback for leftover rows that include course links
-  const leftovers = rows.filter((r) => !used.has(r.idx) && r.courses.length > 0)
-  if (leftovers.length) {
-    const opts = leftovers.flatMap((r) =>
-      r.courses.map((c) => ({ id: `course:${c}`, label: c, kind: "course" as const, code: c, gradeMin: r.gradeMin }))
-    )
-    const dedup = new Map(opts.map((o) => [o.id, o]))
+    for (const p of row.programs) {
+      options.push({
+        id: `program:${p.toLowerCase()}`,
+        label: p,
+        kind: "program",
+      })
+    }
+
+    if (options.length === 0) continue
+
+    const dedup = [...new Map(options.map((o) => [o.id, o])).values()]
+
+    let title = "Requirements"
+    if (/enrolled in/i.test(row.text) || (row.programs.length > 0 && row.courses.length === 0)) {
+      title = `Program enrollment ${row.mode === "any" ? "(choose 1)" : "requirements"}`
+    } else {
+      title = titleFromSubjects(row.courses, row.mode)
+    }
+
     groups.push({
-      id: "other",
-      title: "Additional requirements",
-      mode: "all",
-      options: [...dedup.values()],
+      id: `group-${row.idx}`,
+      title,
+      mode: row.mode,
+      options: dedup,
     })
   }
 
-  return groups
+  // Merge groups with identical titles + mode for cleaner UI
+  const merged = new Map<string, RequirementGroup>()
+  for (const g of groups) {
+    const key = `${g.title}|${g.mode}`
+    const existing = merged.get(key)
+    if (!existing) {
+      merged.set(key, { ...g })
+      continue
+    }
+    const opts = [...existing.options, ...g.options]
+    existing.options = [...new Map(opts.map((o) => [o.id, o])).values()]
+  }
+
+  return [...merged.values()]
 }
 
 export function CoursesPage() {
