@@ -1,9 +1,8 @@
 import { Link, useNavigate } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { Search } from "lucide-react"
-import { useState, useMemo, useRef, useEffect } from "react"
-import { searchCourses, loadCourseIndex } from "@/lib/courseIndex"
-import type { Course } from "@/lib/types"
+import { useState, useRef, useEffect } from "react"
+import { searchCatalogCourses, type CatalogCourseSearchItem } from "@/lib/uwCatalog"
 import ThemeSwitch from "@/components/ui/theme-switch"
 
 export function Navbar() {
@@ -11,17 +10,24 @@ export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isOpen, setIsOpen] = useState(false)
   const [focusedIndex, setFocusedIndex] = useState(-1)
+  const [results, setResults] = useState<CatalogCourseSearchItem[]>([])
   const searchRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Load course index on mount
   useEffect(() => {
-    loadCourseIndex()
-  }, [])
+    const q = searchQuery.trim()
+    if (!q) {
+      setResults([])
+      return
+    }
 
-  const results = useMemo(() => {
-    if (!searchQuery.trim()) return []
-    return searchCourses(searchQuery).slice(0, 10)
+    const t = setTimeout(() => {
+      searchCatalogCourses(q)
+        .then((rows) => setResults(rows.slice(0, 12)))
+        .catch(() => setResults([]))
+    }, 120)
+
+    return () => clearTimeout(t)
   }, [searchQuery])
 
   useEffect(() => {
@@ -35,11 +41,14 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  const handleSelect = (course: Course) => {
-    navigate(`/courses?course=${encodeURIComponent(course.code)}`)
+  const normalize = (code: string) => code.replace(/\s+/g, "").toUpperCase()
+
+  const handleSelect = (course: CatalogCourseSearchItem) => {
+    navigate(`/courses?course=${encodeURIComponent(normalize(course.__catalogCourseId))}`)
     setSearchQuery("")
     setIsOpen(false)
     setFocusedIndex(-1)
+    setResults([])
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -53,6 +62,9 @@ export function Navbar() {
     } else if (e.key === "Enter" && focusedIndex >= 0 && results[focusedIndex]) {
       e.preventDefault()
       handleSelect(results[focusedIndex])
+    } else if (e.key === "Enter" && results.length === 1) {
+      e.preventDefault()
+      handleSelect(results[0])
     } else if (e.key === "Escape") {
       setIsOpen(false)
       setFocusedIndex(-1)
@@ -93,9 +105,9 @@ export function Navbar() {
               className="absolute z-[1200] mt-2 max-h-64 w-full overflow-auto rounded-xl border liquid-glass animate-in fade-in-0 zoom-in-95 duration-100"
               style={{ borderColor: 'hsl(var(--dropdown-border) / 0.65)' }}
             >
-              {results.map((course: Course, index: number) => (
+              {results.map((course, index: number) => (
                 <button
-                  key={course.code}
+                  key={course.id}
                   type="button"
                   onClick={() => handleSelect(course)}
                   onMouseEnter={() => setFocusedIndex(index)}
@@ -104,7 +116,7 @@ export function Navbar() {
                     index === focusedIndex && "bg-accent"
                   )}
                 >
-                  <div className="font-semibold text-foreground">{course.code}</div>
+                  <div className="font-semibold text-foreground">{normalize(course.__catalogCourseId)}</div>
                   <div className="line-clamp-1 text-sm text-muted-foreground">{course.title}</div>
                 </button>
               ))}
