@@ -334,6 +334,22 @@ export function CoursesPage() {
     return { total, done, pct: total ? Math.round((done / total) * 100) : 0 }
   }, [groupState])
 
+  const effectiveCompletedCodes = useMemo(() => {
+    const next = new Set<string>(completedCodes)
+    const walk = (code: string) => {
+      const node = courseMap.get(code)
+      if (!node) return
+      for (const p of node.prerequisiteCodes) {
+        if (!next.has(p)) {
+          next.add(p)
+          walk(p)
+        }
+      }
+    }
+    for (const code of completedCodes) walk(code)
+    return next
+  }, [completedCodes, courseMap])
+
   const hiddenCodes = useMemo(() => {
     if (!hideSatisfiedAlternatives || !target) return new Set<string>()
 
@@ -664,7 +680,8 @@ export function CoursesPage() {
                 <CatalogPathwayGraph
                   targetCode={targetCode}
                   courseMap={courseMap}
-                  completedCodes={completedCodes}
+                  completedCodes={effectiveCompletedCodes}
+                  directCompletedCodes={completedCodes}
                   hiddenCodes={hiddenCodes}
                   onSelectCode={(code) => setSelectedCode(code)}
                 />

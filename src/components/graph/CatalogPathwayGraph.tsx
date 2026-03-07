@@ -40,12 +40,14 @@ export function CatalogPathwayGraph({
   targetCode,
   courseMap,
   completedCodes,
+  directCompletedCodes,
   hiddenCodes,
   onSelectCode,
 }: {
   targetCode: string
   courseMap: Map<string, CourseNodeData>
   completedCodes?: Set<string>
+  directCompletedCodes?: Set<string>
   hiddenCodes?: Set<string>
   onSelectCode?: (code: string) => void
 }) {
@@ -60,9 +62,11 @@ export function CatalogPathwayGraph({
     for (const course of courseMap.values()) {
       const isTarget = course.code === targetCode
       const isCompleted = completedCodes?.has(course.code)
+      const isDirect = directCompletedCodes?.has(course.code)
+      const isAssumed = Boolean(isCompleted && !isDirect)
       nodeList.push({
         id: course.code,
-        data: { label: `${course.code}\n${course.title}` },
+        data: { label: `${course.code}\n${course.title}${isAssumed ? "\n(assumed prereq)" : ""}` },
         type: "default",
         hidden: hiddenCodes?.has(course.code) || false,
         position: { x: 0, y: 0 },
@@ -74,7 +78,7 @@ export function CatalogPathwayGraph({
             : isCompleted
               ? "2px solid hsl(42 90% 44%)"
               : "1px solid hsl(var(--border))",
-          background: isCompleted ? "hsl(42 100% 92% / 0.92)" : "hsl(var(--card) / 0.98)",
+          background: isAssumed ? "hsl(45 100% 94% / 0.85)" : isCompleted ? "hsl(42 100% 92% / 0.92)" : "hsl(var(--card) / 0.98)",
           color: "hsl(var(--foreground))",
           opacity: hiddenCodes?.has(course.code) ? 0 : 1,
           boxShadow: isTarget
@@ -107,7 +111,7 @@ export function CatalogPathwayGraph({
     }
 
     return { nodes: getLayouted(nodeList, edgeList), edges: edgeList }
-  }, [courseMap, targetCode, isDark, completedCodes, hiddenCodes])
+  }, [courseMap, targetCode, isDark, completedCodes, directCompletedCodes, hiddenCodes])
 
   const comfortableZoom = nodes.length > 20 ? 0.78 : nodes.length > 12 ? 0.86 : 0.96
 
