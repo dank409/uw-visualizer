@@ -40,11 +40,13 @@ export function CatalogPathwayGraph({
   targetCode,
   courseMap,
   completedCodes,
+  hiddenCodes,
   onSelectCode,
 }: {
   targetCode: string
   courseMap: Map<string, CourseNodeData>
   completedCodes?: Set<string>
+  hiddenCodes?: Set<string>
   onSelectCode?: (code: string) => void
 }) {
   const [rf, setRf] = useState<ReactFlowInstance | null>(null)
@@ -62,6 +64,7 @@ export function CatalogPathwayGraph({
         id: course.code,
         data: { label: `${course.code}\n${course.title}` },
         type: "default",
+        hidden: hiddenCodes?.has(course.code) || false,
         position: { x: 0, y: 0 },
         style: {
           width: isTarget ? Math.round(NODE_W * 1.5) : NODE_W,
@@ -84,6 +87,7 @@ export function CatalogPathwayGraph({
           id: `${prereq}->${course.code}`,
           source: prereq,
           target: course.code,
+          hidden: (hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code)) || false,
           animated: false,
           style: {
             stroke: "hsl(142 46% 45%)",
@@ -95,7 +99,7 @@ export function CatalogPathwayGraph({
     }
 
     return { nodes: getLayouted(nodeList, edgeList), edges: edgeList }
-  }, [courseMap, targetCode, isDark, completedCodes])
+  }, [courseMap, targetCode, isDark, completedCodes, hiddenCodes])
 
   const comfortableZoom = nodes.length > 20 ? 0.78 : nodes.length > 12 ? 0.86 : 0.96
 
