@@ -21,13 +21,23 @@ export function Navbar() {
       return
     }
 
+    let active = true
     const t = setTimeout(() => {
       searchCatalogCourses(q)
-        .then((rows) => setResults(rows.slice(0, 12)))
-        .catch(() => setResults([]))
+        .then((rows) => {
+          if (!active) return
+          setResults(rows.slice(0, 12))
+        })
+        .catch(() => {
+          if (!active) return
+          setResults([])
+        })
     }, 120)
 
-    return () => clearTimeout(t)
+    return () => {
+      active = false
+      clearTimeout(t)
+    }
   }, [searchQuery])
 
   useEffect(() => {
