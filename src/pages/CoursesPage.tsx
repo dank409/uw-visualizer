@@ -11,16 +11,35 @@ import {
   type CourseNodeData,
 } from "@/lib/uwCatalog"
 
+type RequirementOption = {
+  id: string
+  label: string
+  kind: "course" | "program"
+  code?: string
+  gradeMin?: number
+}
+
+type RequirementGroup = {
+  id: string
+  title: string
+  mode: "any" | "all"
+  options: RequirementOption[]
+}
+
 function normalize(code: string) {
   return code.replace(/\s+/g, "").toUpperCase()
+}
+
+function isCourseCode(text: string) {
+  return /^[A-Z]{2,}\d{2,4}[A-Z]?$/.test(normalize(text))
 }
 
 function parseGradeRules(html?: string) {
   const out = new Map<string, number>()
   if (!html) return out
-
   const doc = new DOMParser().parseFromString(html, "text/html")
   const rows = Array.from(doc.querySelectorAll('[data-test$="-result"]'))
+
   for (const row of rows) {
     const text = (row.textContent || "").replace(/\s+/g, " ")
     const g = text.match(/minimum grade of\s*(\d+)%/i)
@@ -28,9 +47,10 @@ function parseGradeRules(html?: string) {
     const grade = Number(g[1])
     const anchors = Array.from(row.querySelectorAll("a"))
       .map((a) => normalize(a.textContent || ""))
-      .filter(Boolean)
+      .filter((x) => isCourseCode(x))
     for (const code of anchors) out.set(code, grade)
   }
+
   return out
 }
 
@@ -40,10 +60,114 @@ function makeSummarySentence(code: string, prereqCodes: string[], html?: string)
   const gradePhrase = grades.length
     ? `${Math.min(...grades)}–${Math.max(...grades)}% minimum grades may apply`
     : "grade minimums may apply"
-  const programReq = html && /enrolled in/i.test(html) ? "plus program enrollment conditions" : ""
+  const programReq = html && /enrolled in/i.test(html) ? "plus program enrollment" : ""
   return `${code} requires ${Math.max(1, prereqCodes.length)} prerequisite option(s), ${gradePhrase}${programReq ? `, ${programReq}` : ""}.`
 }
 
+function parseTrackerGroups(html?: string): RequirementGroup[] {
+  if (!html) return []
+
+  const doc = new DOMParser().parseFromString(html, "text/html")
+  const rows = Array.from(doc.querySelectorAll('[data-test$="-result"]')).map((row, idx) => {
+    const text = (row.textContent || "").replace(/\s+/g, " ").trim()
+    const anchors = Array.from(row.querySelectorAll("a")).map((a) => (a.textContent || "").trim())
+    const courses = anchors.map(normalize).filter((a) => isCourseCode(a))
+    const programs = anchors.filter((a) => !isCourseCode(a))
+    const gradeMatch = text.match(/minimum grade of\s*(\d+)%/i)
+    const gradeMin = gradeMatch ? Number(gradeMatch[1]) : undefined
+    return { idx, text, courses, programs, gradeMin }
+  })
+
+  const used = new Set<number>()
+  const groups: RequirementGroup[] = []
+
+  // 1) Linear algebra style row: at least 1 with many course options
+  const linear = rows.find((r) => /at least\s*1\s*of the following/i.test(r.text) && r.courses.length > 1)
+  if (linear) {
+    used.add(linear.idx)
+    groups.push({
+      id: "linear",
+      title: "Linear Algebra (at least 1 required)",
+      mode: "any",
+      options: linear.courses.map((c) => ({ id: `course:${c}`, label: c, kind: "course", code: c })),
+    })
+  }
+
+  // 2) Calculus variant rows: appears in many UW rules as a "Complete 1 of following" block with 1-course rows
+  const hasOneOfBlock = /Complete\s*(?:<!--\s*-->)?\s*1\s*(?:<!--\s*-->)?\s*of the following/i.test(html)
+  const calcCandidateRows = rows.filter(
+    (r) =>
+      !used.has(r.idx) &&
+      !/enrolled in/i.test(r.text) &&
+      r.courses.length >= 1 &&
+      (/minimum grade/i.test(r.text) || /Must have completed the following/i.test(r.text))
+  )
+
+  if (hasOneOfBlock && calcCandidateRows.length >= 2) {
+    calcCandidateRows.forEach((r) => used.add(r.idx))
+    const calcOptions = calcCandidateRows.flatMap((r) =>
+      r.courses.map((c) => ({ id: `course:${c}`, label: c, kind: "course" as const, code: c, gradeMin: r.gradeMin }))
+    )
+    const dedup = new Map(calcOptions.map((o) => [o.id, o]))
+    groups.push({
+      id: "calc2",
+      title: "Calculus 2 path (one variant)",
+      mode: "any",
+      options: [...dedup.values()],
+    })
+  }
+
+  // 3) Program rows
+  const programRows = rows.filter((r) => /enrolled in/i.test(r.text))
+  if (programRows.length > 0) {
+    programRows.forEach((r) => used.add(r.idx))
+    const programOptions: RequirementOption[] = []
+
+    for (const row of programRows) {
+      if (row.programs.length) {
+        row.programs.forEach((p) => {
+          const id = `program:${p.toLowerCase()}`
+          if (!programOptions.find((x) => x.id === id)) {
+            programOptions.push({ id, label: p, kind: "program" })
+          }
+        })
+      } else {
+        const m = row.text.match(/Enrolled in\s*(.+)$/i)
+        const label = m ? m[1] : row.text
+        const id = `program:${label.toLowerCase()}`
+        if (!programOptions.find((x) => x.id === id)) {
+          programOptions.push({ id, label, kind: "program" })
+        }
+      }
+    }
+
+    if (programOptions.length) {
+      groups.push({
+        id: "program",
+        title: "Program enrollment (one required)",
+        mode: "any",
+        options: programOptions,
+      })
+    }
+  }
+
+  // 4) Fallback for leftover rows that include course links
+  const leftovers = rows.filter((r) => !used.has(r.idx) && r.courses.length > 0)
+  if (leftovers.length) {
+    const opts = leftovers.flatMap((r) =>
+      r.courses.map((c) => ({ id: `course:${c}`, label: c, kind: "course" as const, code: c, gradeMin: r.gradeMin }))
+    )
+    const dedup = new Map(opts.map((o) => [o.id, o]))
+    groups.push({
+      id: "other",
+      title: "Additional requirements",
+      mode: "all",
+      options: [...dedup.values()],
+    })
+  }
+
+  return groups
+}
 
 export function CoursesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -57,12 +181,12 @@ export function CoursesPage() {
   const [courseMap, setCourseMap] = useState<Map<string, CourseNodeData>>(new Map())
   const [selectedCode, setSelectedCode] = useState("")
   const [completedCodes, setCompletedCodes] = useState<Set<string>>(new Set())
+  const [completedPrograms, setCompletedPrograms] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const code = searchParams.get("course")
     if (!code) return
-    const normalized = normalize(code)
-    setTargetCode(normalized)
+    setTargetCode(normalize(code))
   }, [searchParams])
 
   useEffect(() => {
@@ -77,6 +201,7 @@ export function CoursesPage() {
         setCourseMap(map)
         setSelectedCode(targetCode)
         setCompletedCodes(new Set())
+        setCompletedPrograms(new Set())
       })
       .catch((e) => {
         if (!active) return
@@ -109,21 +234,12 @@ export function CoursesPage() {
     return () => clearTimeout(handle)
   }, [query])
 
-  const selected = useMemo(() => {
-    if (!selectedCode) return null
-    return courseMap.get(selectedCode) || null
-  }, [selectedCode, courseMap])
-
-  const target = useMemo(() => {
-    if (!targetCode) return null
-    return courseMap.get(targetCode) || null
-  }, [targetCode, courseMap])
+  const selected = useMemo(() => (selectedCode ? courseMap.get(selectedCode) || null : null), [selectedCode, courseMap])
+  const target = useMemo(() => (targetCode ? courseMap.get(targetCode) || null : null), [targetCode, courseMap])
 
   const immediatePrereqs = useMemo(() => {
     if (!target) return []
-    return target.prerequisiteCodes
-      .map((code) => courseMap.get(code))
-      .filter((c): c is CourseNodeData => Boolean(c))
+    return target.prerequisiteCodes.map((c) => courseMap.get(c)).filter((c): c is CourseNodeData => Boolean(c))
   }, [target, courseMap])
 
   const summarySentence = useMemo(
@@ -131,25 +247,38 @@ export function CoursesPage() {
     [target]
   )
 
-  const selectedChecklist = useMemo(() => {
-    if (!selected) return [] as Array<{ code: string; title: string; gradeMin?: number }>
-    const gradeMap = parseGradeRules(selected.prerequisitesHtml)
-    return selected.prerequisiteCodes.map((code) => ({
-      code,
-      title: courseMap.get(code)?.title || "Course",
-      gradeMin: gradeMap.get(code),
-    }))
-  }, [selected, courseMap])
+  const trackerGroups = useMemo(() => parseTrackerGroups(target?.prerequisitesHtml), [target])
 
-  const progress = useMemo(() => {
-    const total = selectedChecklist.length
-    const done = selectedChecklist.filter((r) => completedCodes.has(r.code)).length
+  const groupState = useMemo(() => {
+    return trackerGroups.map((group) => {
+      const checkedOptions = group.options.filter((opt) =>
+        opt.kind === "course" ? completedCodes.has(opt.code || "") : completedPrograms.has(opt.id)
+      )
+      const satisfied = group.mode === "any" ? checkedOptions.length > 0 : checkedOptions.length === group.options.length
+      return { ...group, checkedOptions, satisfied }
+    })
+  }, [trackerGroups, completedCodes, completedPrograms])
+
+  const trackerProgress = useMemo(() => {
+    const total = groupState.length
+    const done = groupState.filter((g) => g.satisfied).length
     return { total, done, pct: total ? Math.round((done / total) * 100) : 0 }
-  }, [selectedChecklist, completedCodes])
+  }, [groupState])
+
+  const allSatisfied = trackerProgress.total > 0 && trackerProgress.done === trackerProgress.total
+  const courseGroupsSatisfied = groupState
+    .filter((g) => g.id !== "program")
+    .every((g) => g.satisfied)
+
+  const missingGroupTitles = groupState.filter((g) => !g.satisfied).map((g) => g.title)
+
+  const antireqConflicts = useMemo(() => {
+    if (!target) return []
+    return target.antirequisiteCodes.filter((code) => completedCodes.has(code))
+  }, [target, completedCodes])
 
   const mobileLevels = useMemo(() => {
     if (!target) return [] as Array<{ level: number; courses: CourseNodeData[] }>
-
     const levels = new Map<number, Set<string>>()
     const seen = new Set<string>()
 
@@ -162,9 +291,7 @@ export function CoursesPage() {
 
       const node = courseMap.get(code)
       if (!node) return
-      for (const prereq of node.prerequisiteCodes) {
-        walk(prereq, level + 1)
-      }
+      node.prerequisiteCodes.forEach((p) => walk(p, level + 1))
     }
 
     walk(target.code, 0)
@@ -173,9 +300,7 @@ export function CoursesPage() {
       .sort((a, b) => a[0] - b[0])
       .map(([level, codes]) => ({
         level,
-        courses: [...codes]
-          .map((c) => courseMap.get(c))
-          .filter((c): c is CourseNodeData => Boolean(c)),
+        courses: [...codes].map((c) => courseMap.get(c)).filter((c): c is CourseNodeData => Boolean(c)),
       }))
   }, [target, courseMap])
 
@@ -185,11 +310,28 @@ export function CoursesPage() {
     setOpen(false)
     setSearchParams({ course: code })
 
-    // sanity check that exact code resolves in official API
     const exact = await resolveCourseByCode(code)
     if (!exact) {
       setError(`Official catalog could not resolve ${code}. Please verify directly on the calendar site.`)
-      return
+    }
+  }
+
+  const toggleOption = (opt: RequirementOption, checked: boolean) => {
+    if (opt.kind === "course") {
+      const code = opt.code || ""
+      setCompletedCodes((prev) => {
+        const next = new Set(prev)
+        if (checked) next.add(code)
+        else next.delete(code)
+        return next
+      })
+    } else {
+      setCompletedPrograms((prev) => {
+        const next = new Set(prev)
+        if (checked) next.add(opt.id)
+        else next.delete(opt.id)
+        return next
+      })
     }
   }
 
@@ -200,12 +342,11 @@ export function CoursesPage() {
           <strong>Official data error:</strong> {error}
         </div>
       ) : null}
+
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         <section className="rounded-xl border border-border bg-card p-4 h-fit">
           <h1 className="text-xl font-semibold">UWVisualizer</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Official-data course pathway visualizer for UWaterloo.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Official-data course pathway visualizer for UWaterloo.</p>
 
           <div className="relative mt-4">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -222,11 +363,7 @@ export function CoursesPage() {
             {open && results.length > 0 ? (
               <div className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-border bg-popover shadow-lg">
                 {results.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => selectResult(c)}
-                    className="w-full px-3 py-2 text-left hover:bg-accent"
-                  >
+                  <button key={c.id} onClick={() => selectResult(c)} className="w-full px-3 py-2 text-left hover:bg-accent">
                     <div className="text-sm font-semibold">{normalize(c.__catalogCourseId)}</div>
                     <div className="text-xs text-muted-foreground line-clamp-1">{c.title}</div>
                   </button>
@@ -242,9 +379,7 @@ export function CoursesPage() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Target course</div>
               <div className="mt-1 font-semibold">{target.code}</div>
               <div className="text-sm text-muted-foreground">{target.title}</div>
-              <div className="mt-2 text-xs text-muted-foreground">
-                Nodes shown: {courseMap.size} (depth-limited to 4 levels)
-              </div>
+              <div className="mt-2 text-xs text-muted-foreground">Nodes shown: {courseMap.size} (depth-limited to 4 levels)</div>
             </div>
           ) : null}
 
@@ -319,11 +454,7 @@ export function CoursesPage() {
               {immediatePrereqs.length > 0 ? (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {immediatePrereqs.map((p) => (
-                    <button
-                      key={p.code}
-                      onClick={() => setSelectedCode(p.code)}
-                      className="rounded-md border border-border bg-background px-2.5 py-1 text-xs hover:bg-accent"
-                    >
+                    <button key={p.code} onClick={() => setSelectedCode(p.code)} className="rounded-md border border-border bg-background px-2.5 py-1 text-xs hover:bg-accent">
                       {p.code}
                     </button>
                   ))}
@@ -339,15 +470,8 @@ export function CoursesPage() {
               <div>
                 <h2 className="text-lg font-semibold">{selected.code}</h2>
                 <p className="text-sm text-muted-foreground">{selected.title}</p>
-                {summarySentence ? (
-                  <p className="mt-2 text-xs text-muted-foreground">{summarySentence}</p>
-                ) : null}
-                <a
-                  href={selected.catalogUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1 inline-block text-xs text-[hsl(var(--brand-dark))] underline"
-                >
+                {summarySentence ? <p className="mt-2 text-xs text-muted-foreground">{summarySentence}</p> : null}
+                <a href={selected.catalogUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs text-[hsl(var(--brand-dark))] underline">
                   Open official calendar page
                 </a>
               </div>
@@ -356,56 +480,73 @@ export function CoursesPage() {
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-semibold">Interactive prerequisite tracker</h3>
                   <button
-                    onClick={() => setCompletedCodes(new Set())}
+                    onClick={() => {
+                      setCompletedCodes(new Set())
+                      setCompletedPrograms(new Set())
+                    }}
                     className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-accent"
                   >
                     Reset completed courses
                   </button>
                 </div>
-                <div className="mt-2 text-xs text-muted-foreground">{progress.done} of {progress.total} requirement options satisfied</div>
+
+                <div className="mt-2 text-xs text-muted-foreground">
+                  {trackerProgress.done} of {trackerProgress.total} groups satisfied
+                  {missingGroupTitles.length ? ` — missing: ${missingGroupTitles.join(", ")}` : ""}
+                </div>
                 <div className="mt-2 h-2 w-full rounded-full bg-background border border-border overflow-hidden">
-                  <div className="h-full bg-[hsl(var(--brand))] transition-all" style={{ width: `${progress.pct}%` }} />
+                  <div className="h-full bg-[hsl(var(--brand))] transition-all" style={{ width: `${trackerProgress.pct}%` }} />
                 </div>
 
-                {selectedChecklist.length > 0 ? (
-                  <div className="mt-3 space-y-2">
-                    {selectedChecklist.map((r) => {
-                      const checked = completedCodes.has(r.code)
-                      return (
-                        <label key={r.code} className={`flex items-start gap-2 rounded-md border px-2 py-1.5 text-xs ${checked ? "border-[hsl(var(--brand))/0.45] bg-[hsl(var(--brand))/0.08]" : "border-border bg-background"}`}>
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => {
-                              setCompletedCodes((prev) => {
-                                const next = new Set(prev)
-                                if (e.target.checked) next.add(r.code)
-                                else next.delete(r.code)
-                                return next
-                              })
-                            }}
-                            className="mt-0.5"
-                          />
-                          <span>
-                            <strong>{r.code}</strong> — {r.title}
-                            {r.gradeMin ? <span className="text-amber-600"> (min {r.gradeMin}%)</span> : null}
-                          </span>
-                        </label>
-                      )
-                    })}
+                {courseGroupsSatisfied && !allSatisfied ? (
+                  <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                    All course prerequisites satisfied. Program enrollment still required.
                   </div>
-                ) : (
-                  <p className="mt-2 text-xs text-muted-foreground">No parsed prerequisite course options for this selected node.</p>
-                )}
+                ) : null}
+                {allSatisfied ? (
+                  <div className="mt-3 rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs text-emerald-800">
+                    Fully eligible based on selected completion inputs.
+                  </div>
+                ) : null}
+
+                <div className="mt-3 space-y-3">
+                  {groupState.map((group) => (
+                    <details key={group.id} open className="rounded-md border border-border bg-background p-2">
+                      <summary className="cursor-pointer list-none text-xs font-semibold flex items-center justify-between">
+                        <span>{group.title}</span>
+                        <span className={group.satisfied ? "text-emerald-600" : "text-amber-600"}>
+                          {group.satisfied ? "Satisfied" : "Not satisfied"}
+                        </span>
+                      </summary>
+                      <div className="mt-2 space-y-1.5">
+                        {group.options.map((opt) => {
+                          const checked = opt.kind === "course" ? completedCodes.has(opt.code || "") : completedPrograms.has(opt.id)
+                          return (
+                            <label key={opt.id} className={`flex items-start gap-2 rounded-md border px-2 py-1.5 text-xs ${checked ? "border-[hsl(var(--brand))/0.45] bg-[hsl(var(--brand))/0.08]" : "border-border bg-background"}`}>
+                              <input type="checkbox" checked={checked} onChange={(e) => toggleOption(opt, e.target.checked)} className="mt-0.5" />
+                              <span>
+                                <strong>{opt.label}</strong>
+                                {opt.gradeMin ? <span className="text-amber-600"> (min {opt.gradeMin}%)</span> : null}
+                              </span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+
+                {antireqConflicts.length > 0 ? (
+                  <div className="mt-3 rounded-md border border-red-300 bg-red-50 px-2 py-1 text-xs text-red-700">
+                    Warning: {antireqConflicts.join(", ")} conflicts with {target?.code} (antirequisite).
+                  </div>
+                ) : null}
               </div>
 
               <div className="rounded-lg border border-border bg-muted/20 p-3">
                 <h3 className="text-sm font-semibold">Official prerequisites</h3>
                 {selected.prerequisitesHtml ? (
-                  <div
-                    className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc [&_li]:mb-1 [&_a]:underline"
-                    dangerouslySetInnerHTML={{ __html: selected.prerequisitesHtml }}
-                  />
+                  <div className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc [&_li]:mb-1 [&_a]:underline" dangerouslySetInnerHTML={{ __html: selected.prerequisitesHtml }} />
                 ) : (
                   <p className="mt-2 text-xs text-muted-foreground">No prerequisites listed.</p>
                 )}
@@ -425,10 +566,7 @@ export function CoursesPage() {
                   <p className="mt-2 text-xs text-muted-foreground">No antirequisites listed.</p>
                 )}
                 {selected.antirequisitesHtml ? (
-                  <div
-                    className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc [&_li]:mb-1 [&_a]:underline"
-                    dangerouslySetInnerHTML={{ __html: selected.antirequisitesHtml }}
-                  />
+                  <div className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc [&_li]:mb-1 [&_a]:underline" dangerouslySetInnerHTML={{ __html: selected.antirequisitesHtml }} />
                 ) : null}
               </div>
             </div>
