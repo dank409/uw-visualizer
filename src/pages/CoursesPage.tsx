@@ -97,9 +97,9 @@ function statusIcon(status: SavedCourseStatus) {
 }
 
 function statusColor(status: SavedCourseStatus) {
-  if (status === "completed") return "text-emerald-600"
-  if (status === "in_progress") return "text-sky-600"
-  return "text-amber-600"
+  if (status === "completed") return "text-[hsl(var(--brand-dark))]"
+  if (status === "in_progress") return "text-blue-500"
+  return "text-amber-500"
 }
 
 function suggestNextCourses(targetCode: string, allSatisfied: boolean): string[] {
@@ -702,16 +702,6 @@ export function CoursesPage() {
             </div>
           )}
 
-          {target ? (
-            <a
-              href={`https://uwflow.com/course/${target.code.toLowerCase()}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-block text-xs text-[hsl(var(--brand-dark))] underline"
-            >
-              See student reviews and enrollment stats on UWFlow →
-            </a>
-          ) : null}
 
           {target ? (
             <div className="rounded-xl border border-border bg-card p-4">
@@ -754,6 +744,14 @@ export function CoursesPage() {
               <div>
                 <h2 className="text-lg font-semibold">{selected.code}</h2>
                 <p className="text-sm text-muted-foreground">{selected.title}</p>
+                <a
+                  href={`https://uwflow.com/course/${selected.code.toLowerCase()}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-block rounded-md border border-[hsl(var(--brand))/0.55] bg-[hsl(var(--brand))/0.16] px-2.5 py-1 text-xs font-medium text-[hsl(var(--brand-dark))] underline decoration-[hsl(var(--brand-dark))]/60"
+                >
+                  {selected.code} — See reviews, ratings & stats on UWFlow →
+                </a>
                 {summarySentence ? <p className="mt-2 text-xs text-muted-foreground">{summarySentence}</p> : null}
                 <a href={selected.catalogUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs text-[hsl(var(--brand-dark))] underline">
                   Open official calendar page
@@ -796,7 +794,7 @@ export function CoursesPage() {
                   </div>
                 ) : null}
                 {allSatisfied ? (
-                  <div className="mt-3 rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs text-emerald-800">
+                  <div className="mt-3 rounded-md border border-[hsl(var(--brand))/0.45] bg-[hsl(var(--brand))/0.14] px-2 py-1 text-xs text-[hsl(var(--brand-dark))]">
                     Fully eligible based on selected completion inputs.
                   </div>
                 ) : null}
@@ -806,7 +804,7 @@ export function CoursesPage() {
                     <details key={group.id} open className="rounded-md border border-border bg-background p-2">
                       <summary className="cursor-pointer list-none text-xs font-semibold flex items-center justify-between">
                         <span>{group.title}</span>
-                        <span className={group.satisfied ? "text-emerald-600" : "text-amber-600"}>
+                        <span className={group.satisfied ? "text-[hsl(var(--brand-dark))]" : "text-amber-500"}>
                           {group.satisfied ? "Satisfied" : "Not satisfied"}
                         </span>
                       </summary>

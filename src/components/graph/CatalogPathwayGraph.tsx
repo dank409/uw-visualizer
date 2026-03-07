@@ -72,15 +72,15 @@ export function CatalogPathwayGraph({
           border: isTarget
             ? "3px solid hsl(var(--brand))"
             : isCompleted
-              ? "2px solid hsl(142 55% 42%)"
+              ? "2px solid hsl(42 90% 44%)"
               : "1px solid hsl(var(--border))",
-          background: isCompleted ? "hsl(142 45% 92% / 0.9)" : "hsl(var(--card) / 0.98)",
+          background: isCompleted ? "hsl(42 100% 92% / 0.92)" : "hsl(var(--card) / 0.98)",
           color: "hsl(var(--foreground))",
           opacity: hiddenCodes?.has(course.code) ? 0 : 1,
           boxShadow: isTarget
-            ? "0 0 0 4px hsl(var(--brand) / 0.2), 0 10px 24px hsl(172 88% 40% / 0.2)"
+            ? "0 0 0 4px hsl(var(--brand) / 0.28), 0 10px 24px hsl(42 100% 45% / 0.26)"
             : isCompleted
-              ? "0 0 0 2px hsl(142 45% 50% / 0.25), 0 6px 14px hsl(142 40% 45% / 0.18)"
+              ? "0 0 0 2px hsl(42 85% 48% / 0.24), 0 6px 14px hsl(42 85% 40% / 0.2)"
               : "0 2px 8px hsl(220 20% 20% / 0.08)",
           fontSize: 12,
           lineHeight: 1.25,
@@ -98,8 +98,8 @@ export function CatalogPathwayGraph({
           hidden: (hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code)) || false,
           animated: false,
           style: {
-            stroke: pathSatisfied ? "hsl(142 58% 42%)" : "hsl(142 46% 45%)",
-            strokeWidth: pathSatisfied ? 2.4 : 1.9,
+            stroke: pathSatisfied ? "hsl(42 90% 46%)" : "hsl(42 55% 42%)",
+            strokeWidth: pathSatisfied ? 2.5 : 1.9,
             opacity: hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code) ? 0 : 1,
           },
         })

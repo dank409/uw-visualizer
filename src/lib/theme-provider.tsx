@@ -18,9 +18,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         return stored
       }
       const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches
-      return prefersDark ? "dark" : "light"
+      return prefersDark ? "dark" : "dark"
     }
-    return "light"
+    return "dark"
   })
   const [mounted, setMounted] = useState(false)
 
@@ -29,7 +29,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement
     const stored = localStorage.getItem("theme") as Theme | null
     const systemPrefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches
-    const initialTheme = (stored === "dark" || stored === "light") ? stored : (systemPrefersDark ? "dark" : "light")
+    const initialTheme = (stored === "dark" || stored === "light") ? stored : (systemPrefersDark ? "dark" : "dark")
     
     if (initialTheme === "dark") {
       root.classList.add("dark")
