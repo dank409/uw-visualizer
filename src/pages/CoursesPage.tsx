@@ -15,14 +15,6 @@ function normalize(code: string) {
   return code.replace(/\s+/g, "").toUpperCase()
 }
 
-function summarizePrereqHtml(html?: string): string[] {
-  if (!html) return []
-  const doc = new DOMParser().parseFromString(html, "text/html")
-  const lines = Array.from(doc.querySelectorAll('[data-test$="-result"]'))
-    .map((el) => (el.textContent || "").replace(/\s+/g, " ").trim())
-    .filter(Boolean)
-  return lines.slice(0, 6)
-}
 
 export function CoursesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -102,8 +94,6 @@ export function CoursesPage() {
       .map((code) => courseMap.get(code))
       .filter((c): c is CourseNodeData => Boolean(c))
   }, [target, courseMap])
-
-  const pathwaySummary = useMemo(() => summarizePrereqHtml(target?.prerequisitesHtml), [target])
 
   const mobileLevels = useMemo(() => {
     if (!target) return [] as Array<{ level: number; courses: CourseNodeData[] }>
@@ -226,17 +216,6 @@ export function CoursesPage() {
         </section>
 
         <section className="space-y-4">
-          {target && pathwaySummary.length > 0 ? (
-            <div className="rounded-xl border border-border bg-card p-4">
-              <h3 className="text-sm font-semibold">Pathway summary</h3>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
-                {pathwaySummary.map((line, idx) => (
-                  <li key={idx}>{line}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
           {targetCode && courseMap.size > 0 ? (
             <>
               <div className="hidden md:block">
@@ -281,7 +260,7 @@ export function CoursesPage() {
 
           {target ? (
             <div className="rounded-xl border border-border bg-card p-4">
-              <h3 className="text-sm font-semibold">Immediate prerequisite options (official parsed links)</h3>
+              <h3 className="text-sm font-semibold">At-a-glance requirement groups</h3>
               {immediatePrereqs.length > 0 ? (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {immediatePrereqs.map((p) => (
@@ -305,6 +284,12 @@ export function CoursesPage() {
               <div>
                 <h2 className="text-lg font-semibold">{selected.code}</h2>
                 <p className="text-sm text-muted-foreground">{selected.title}</p>
+                {target ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    To enroll in {target.code}, complete one of {Math.max(1, target.prerequisiteCodes.length)} immediate prerequisite options
+                    and satisfy all official grade/program conditions shown below.
+                  </p>
+                ) : null}
                 <a
                   href={selected.catalogUrl}
                   target="_blank"
@@ -316,7 +301,7 @@ export function CoursesPage() {
               </div>
 
               <div className="rounded-lg border border-border bg-muted/20 p-3">
-                <h3 className="text-sm font-semibold">Official prerequisites (verbatim)</h3>
+                <h3 className="text-sm font-semibold">Official prerequisites</h3>
                 {selected.prerequisitesHtml ? (
                   <div
                     className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc [&_li]:mb-1 [&_a]:underline"

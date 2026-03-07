@@ -1,16 +1,24 @@
-import { useMemo } from "react"
-import ReactFlow, { Background, Controls, MiniMap, Position, type Edge, type Node } from "reactflow"
+import { useEffect, useMemo, useState } from "react"
+import ReactFlow, {
+  Background,
+  Controls,
+  MiniMap,
+  Position,
+  type Edge,
+  type Node,
+  type ReactFlowInstance,
+} from "reactflow"
 import dagre from "dagre"
 import "reactflow/dist/style.css"
 import type { CourseNodeData } from "@/lib/uwCatalog"
 
-const NODE_W = 230
-const NODE_H = 72
+const NODE_W = 260
+const NODE_H = 84
 
 function getLayouted(nodes: Node[], edges: Edge[]) {
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
-  g.setGraph({ rankdir: "TB", nodesep: 40, ranksep: 70, marginx: 20, marginy: 20 })
+  g.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 90, marginx: 24, marginy: 24 })
 
   nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }))
   edges.forEach((e) => g.setEdge(e.source, e.target))
@@ -37,21 +45,28 @@ export function CatalogPathwayGraph({
   courseMap: Map<string, CourseNodeData>
   onSelectCode?: (code: string) => void
 }) {
+  const [rf, setRf] = useState<ReactFlowInstance | null>(null)
+
+  const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark")
+
   const { nodes, edges } = useMemo(() => {
     const nodeList: Node[] = []
     const edgeList: Edge[] = []
 
     for (const course of courseMap.values()) {
+      const isTarget = course.code === targetCode
       nodeList.push({
         id: course.code,
         data: { label: `${course.code}\n${course.title}` },
         type: "default",
         position: { x: 0, y: 0 },
         style: {
-          width: NODE_W,
-          borderRadius: 12,
-          border: course.code === targetCode ? "2px solid hsl(172 88% 50%)" : "1px solid hsl(214 32% 84%)",
-          background: "hsl(0 0% 100% / 0.96)",
+          width: isTarget ? NODE_W + 12 : NODE_W,
+          borderRadius: 14,
+          border: isTarget ? "2px solid hsl(var(--brand))" : "1px solid hsl(var(--border))",
+          background: isDark ? "hsl(var(--card) / 0.98)" : "hsl(var(--card) / 0.98)",
+          color: "hsl(var(--foreground))",
+          boxShadow: isTarget ? "0 0 0 3px hsl(var(--brand) / 0.22), 0 8px 20px hsl(172 88% 40% / 0.18)" : "0 2px 8px hsl(220 20% 20% / 0.08)",
           fontSize: 12,
           lineHeight: 1.25,
           whiteSpace: "pre-wrap",
@@ -65,30 +80,61 @@ export function CatalogPathwayGraph({
           source: prereq,
           target: course.code,
           animated: false,
-          style: { stroke: "hsl(140 45% 45%)", strokeWidth: 1.8 },
+          style: { stroke: "hsl(142 46% 45%)", strokeWidth: 1.9 },
         })
       }
     }
 
     return { nodes: getLayouted(nodeList, edgeList), edges: edgeList }
-  }, [courseMap, targetCode])
+  }, [courseMap, targetCode, isDark])
+
+  useEffect(() => {
+    if (!rf || nodes.length === 0) return
+    rf.fitView({ padding: 0.24, duration: 300 })
+  }, [rf, nodes])
+
+  const centerTarget = () => {
+    if (!rf) return
+    const targetNode = nodes.find((n) => n.id === targetCode)
+    if (!targetNode) return
+    rf.setCenter(targetNode.position.x + NODE_W / 2, targetNode.position.y + NODE_H / 2, {
+      zoom: Math.min(1.1, rf.getZoom() || 1.1),
+      duration: 320,
+    })
+  }
 
   return (
-    <div className="h-[460px] md:h-[620px] w-full rounded-xl border border-border bg-white overflow-hidden">
+    <div className="relative h-[460px] md:h-[620px] w-full rounded-xl border border-border bg-card overflow-hidden">
       <ReactFlow
         nodes={nodes}
         edges={edges}
         fitView
-        fitViewOptions={{ padding: 0.15 }}
+        fitViewOptions={{ padding: 0.24 }}
         minZoom={0.2}
-        maxZoom={1.6}
+        maxZoom={1.8}
         proOptions={{ hideAttribution: true }}
+        onInit={setRf}
         onNodeClick={(_, n) => onSelectCode?.(n.id)}
       >
-        <MiniMap pannable zoomable nodeStrokeWidth={3} />
-        <Controls />
-        <Background gap={20} size={1} />
+        <MiniMap pannable zoomable nodeStrokeWidth={3} className="!bg-card !border-border" />
+        <Controls showInteractive={false} />
+        <Background gap={20} size={1} color={isDark ? "#2b3345" : "#d9dee8"} />
       </ReactFlow>
+
+      <div className="absolute right-3 top-3 z-20 flex gap-2">
+        <button
+          onClick={() => rf?.fitView({ padding: 0.24, duration: 300 })}
+          className="rounded-md border border-border bg-card/90 px-2 py-1 text-xs hover:bg-accent"
+        >
+          Fit view
+        </button>
+        <button
+          onClick={centerTarget}
+          className="rounded-md border border-border bg-card/90 px-2 py-1 text-xs hover:bg-accent"
+        >
+          Center target
+        </button>
+      </div>
     </div>
   )
 }
