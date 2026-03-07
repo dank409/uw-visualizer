@@ -240,10 +240,11 @@ export function CoursesPage() {
 
           <div className="mt-4 rounded-lg border border-border bg-muted/30 p-3 space-y-3">
             <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Academic readiness</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Academic readiness (beta estimate)</div>
               <div className={`mt-1 text-sm font-semibold ${academicReady ? "text-emerald-600" : "text-amber-600"}`}>
-                {selectedCourse ? (academicReady ? "Eligible (academically)" : "Not yet eligible") : "Select a course"}
+                {selectedCourse ? (academicReady ? "Likely eligible" : "Likely not yet eligible") : "Select a course"}
               </div>
+              <div className="mt-1 text-[11px] text-muted-foreground">Use the official calendar block on the right as the source of truth.</div>
             </div>
 
             <div className="pt-2 border-t border-border/70">
@@ -275,25 +276,44 @@ export function CoursesPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-border bg-card p-4">
-          {selectedCourse && enrollmentRestrictions.length > 0 ? (
-            <div className="mb-3 rounded-lg border border-amber-300/70 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              <div className="font-semibold">Enrollment restrictions detected</div>
-              <div className="mt-1 line-clamp-3">{enrollmentRestrictions.join(" • ")}</div>
-            </div>
-          ) : null}
-
+        <section className="rounded-xl border border-border bg-card p-4 space-y-4">
           {!selectedCourse ? (
             <div className="py-16 text-center text-muted-foreground">Select a course to view prerequisite structure.</div>
-          ) : tree?.error ? (
-            <div className="text-sm text-destructive">{tree.error}</div>
-          ) : !tree?.prerequisites ? (
-            <div className="py-16 text-center text-muted-foreground">No prerequisites listed for this course.</div>
           ) : (
-            <div className="space-y-3">
-              <h2 className="text-base font-semibold">Prerequisite Structure</h2>
-              <RequirementNode requirement={tree.prerequisites} completed={completed} onToggle={toggleCourse} />
-            </div>
+            <>
+              <div className="rounded-lg border border-border bg-muted/20 p-3">
+                <h2 className="text-sm font-semibold">Official calendar prerequisite text (source of truth)</h2>
+                {selectedCourse.prereqText ? (
+                  <div
+                    className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc [&_li]:mb-1 [&_span]:text-inherit [&_a]:underline"
+                    dangerouslySetInnerHTML={{ __html: selectedCourse.prereqText }}
+                  />
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">No prerequisites listed in source data.</p>
+                )}
+              </div>
+
+              {selectedCourse.antireqText ? (
+                <div className="rounded-lg border border-border bg-muted/20 p-3">
+                  <h3 className="text-sm font-semibold">Official antirequisites</h3>
+                  <div
+                    className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc [&_li]:mb-1 [&_span]:text-inherit [&_a]:underline"
+                    dangerouslySetInnerHTML={{ __html: selectedCourse.antireqText }}
+                  />
+                </div>
+              ) : null}
+
+              {tree?.error ? (
+                <div className="text-sm text-destructive">{tree.error}</div>
+              ) : !tree?.prerequisites ? (
+                <div className="py-8 text-center text-muted-foreground">No parsed structure available.</div>
+              ) : (
+                <div className="space-y-3">
+                  <h2 className="text-base font-semibold">Planner view (beta)</h2>
+                  <RequirementNode requirement={tree.prerequisites} completed={completed} onToggle={toggleCourse} />
+                </div>
+              )}
+            </>
           )}
         </section>
       </div>
