@@ -730,7 +730,7 @@ const InteractiveHero: React.FC = () => {
             </AnimatePresence>
         </motion.header>
 
-        <main className="flex-grow flex min-h-[calc(100svh-120px)] flex-col items-center justify-center text-center px-4 pt-8 pb-24 relative z-10">
+        <main className="flex-grow flex min-h-[560px] md:min-h-[620px] flex-col items-center justify-center text-center px-4 pt-8 pb-16 relative z-10">
 
             <motion.h1
                 variants={headlineVariants}
