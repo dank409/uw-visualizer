@@ -1,4 +1,6 @@
 import { JSDOM } from "jsdom"
+import fs from "node:fs"
+import path from "node:path"
 import { parseTrackerGroups } from "../src/lib/prereqGroups"
 
 const { window } = new JSDOM("<!doctype html><html><body></body></html>")
@@ -13,6 +15,8 @@ function hasTitleLike(groups: ReturnType<typeof parseTrackerGroups>, fragment: s
 }
 
 function run() {
+  const fixture = (name: string) =>
+    fs.readFileSync(path.join(process.cwd(), "tests", "fixtures", `${name}.prereq.html`), "utf8")
   // ACTSC-like sample
   const actscHtml = `
   <div>
@@ -59,6 +63,20 @@ function run() {
 
   const mathGroups = parseTrackerGroups(mathHtml)
   assert(hasTitleLike(mathGroups, "linear algebra"), "MATH: expected linear algebra title when explicitly present")
+
+  // Real captured fixture checks
+  const actscReal = parseTrackerGroups(fixture("ACTSC431"))
+  assert(actscReal.length > 0, "ACTSC431 fixture: expected groups")
+  assert(hasTitleLike(actscReal, "actuarial") || hasTitleLike(actscReal, "statistics"), "ACTSC431 fixture: expected actuarial/statistics-oriented naming")
+
+  const physReal = parseTrackerGroups(fixture("PHYS335"))
+  assert(physReal.length > 0, "PHYS335 fixture: expected groups")
+  assert(hasTitleLike(physReal, "physics"), "PHYS335 fixture: expected physics-oriented naming")
+  assert(!hasTitleLike(physReal, "linear algebra"), "PHYS335 fixture: should not label as linear algebra")
+
+  const csReal = parseTrackerGroups(fixture("CS341"))
+  assert(csReal.length > 0, "CS341 fixture: expected groups")
+  assert(hasTitleLike(csReal, "computer science") || hasTitleLike(csReal, "cs"), "CS341 fixture: expected CS-oriented naming")
 
   console.log("parser.test.ts: all assertions passed")
 }
