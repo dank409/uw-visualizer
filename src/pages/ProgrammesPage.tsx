@@ -1,134 +1,245 @@
-import { motion, type Variants } from "framer-motion"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { ArrowRight, GraduationCap, LayoutGrid, Route, Sparkles } from "lucide-react"
+import { getCourse, loadCourseIndex } from "@/lib/courseIndex"
+import { extractProgramCourseCodes, getProgramById, searchPrograms } from "@/lib/programCatalog"
+import type { Prereq } from "@/lib/types"
 
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.08,
-    },
-  },
+type SavedCourse = { code: string; status: "completed" | "in_progress" | "planned" }
+
+type ProgramItem = { id: string; code: string; title: string }
+
+type ProgramDetail = {
+  id: string
+  code: string
+  title: string
+  courseRequirementsNoUnits?: string
+  declarationRequirements?: string
+  minimumAverageSRequired?: string
+  graduationRequirements?: string
 }
 
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.35,
-      ease: [0.16, 1, 0.3, 1],
-    },
-  },
+const SAVED_KEY = "uwv.myCourses.v1"
+
+function normalize(code: string) {
+  return code.replace(/\s+/g, "").toUpperCase()
 }
 
-const roadmap = [
-  {
-    title: "Program requirement map",
-    desc: "Visualize required courses, constraints, and progression blocks for each program.",
-    icon: LayoutGrid,
-    status: "In design",
-  },
-  {
-    title: "Term-by-term planner",
-    desc: "Build a practical sequence and detect bottlenecks before enrollment windows.",
-    icon: Route,
-    status: "Planned",
-  },
-  {
-    title: "Personalized pathways",
-    desc: "Suggest efficient paths based on completed and in-progress courses.",
-    icon: Sparkles,
-    status: "Planned",
-  },
-]
+function prereqComplexity(pr: Prereq | null | undefined): number {
+  if (!pr) return 0
+  if ((pr as any).type === "COURSE") return 1
+  const items = (pr as any).items as Prereq[]
+  if (!items || !items.length) return 0
+  return 1 + Math.max(...items.map((x) => prereqComplexity(x)))
+}
 
-const starterPrograms = [
-  "Computer Science",
-  "Mathematics",
-  "Statistics",
-  "Combinatorics and Optimization",
-  "Software Engineering",
-  "Data Science",
-]
+function loadSaved(): SavedCourse[] {
+  try {
+    return (JSON.parse(localStorage.getItem(SAVED_KEY) || "[]") as SavedCourse[]).map((x) => ({
+      ...x,
+      code: normalize(x.code),
+    }))
+  } catch {
+    return []
+  }
+}
 
 export function ProgrammesPage() {
+  const [q, setQ] = useState("")
+  const [results, setResults] = useState<ProgramItem[]>([])
+  const [selected, setSelected] = useState<ProgramDetail | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [saved, setSaved] = useState<SavedCourse[]>([])
+
+  useEffect(() => {
+    loadCourseIndex()
+    setSaved(loadSaved())
+  }, [])
+
+  useEffect(() => {
+    const query = q.trim()
+    if (!query) {
+      setResults([])
+      return
+    }
+    const t = setTimeout(() => {
+      searchPrograms(query)
+        .then((r) => setResults(r.slice(0, 12)))
+        .catch(() => setResults([]))
+    }, 150)
+    return () => clearTimeout(t)
+  }, [q])
+
+  const selectProgram = async (id: string) => {
+    setLoading(true)
+    try {
+      const detail = await getProgramById(id)
+      setSelected(detail)
+      setQ("")
+      setResults([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const requiredCodes = useMemo(
+    () => extractProgramCourseCodes(selected?.courseRequirementsNoUnits),
+    [selected]
+  )
+
+  const completed = useMemo(
+    () => new Set(saved.filter((s) => s.status === "completed").map((s) => s.code)),
+    [saved]
+  )
+
+  const progress = useMemo(() => {
+    const total = requiredCodes.length
+    const done = requiredCodes.filter((c) => completed.has(c)).length
+    return { total, done, pct: total ? Math.round((done / total) * 100) : 0 }
+  }, [requiredCodes, completed])
+
+  const bottlenecks = useMemo(() => {
+    const missing = requiredCodes.filter((c) => !completed.has(c))
+    return missing
+      .map((code) => {
+        const course = getCourse(code)
+        const prereqCount = prereqComplexity(course?.prereq)
+        return { code, prereqCount }
+      })
+      .sort((a, b) => b.prereqCount - a.prereqCount)
+      .slice(0, 6)
+  }, [requiredCodes, completed])
+
+  const termPlanPreview = useMemo(() => {
+    const missing = requiredCodes.filter((c) => !completed.has(c))
+      .map((code) => ({ code, depth: prereqComplexity(getCourse(code)?.prereq) }))
+
+    return {
+      nextTerm: missing.filter((x) => x.depth <= 1).slice(0, 6),
+      later: missing.filter((x) => x.depth > 1).slice(0, 8),
+    }
+  }, [requiredCodes, completed])
+
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="min-h-[calc(100vh-4rem)] bg-background px-6 py-12"
-    >
-      <div className="mx-auto w-full max-w-5xl">
-        <motion.div variants={itemVariants} className="mb-10">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
-            <GraduationCap className="h-3.5 w-3.5" />
-            Program-level planner (beta roadmap)
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Programmes</h1>
-          <p className="mt-3 max-w-3xl text-muted-foreground">
-            This section is being upgraded into a full program planner. For now, use the <strong>Courses</strong> page
-            to explore prerequisites with program-aware filtering.
-          </p>
+    <div className="mx-auto w-full max-w-6xl px-4 py-8">
+      <div className="rounded-xl border border-border bg-card p-4">
+        <h1 className="text-xl font-semibold">Programmes Roadmap</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Search a UW program, load required-course structure, and see what you’ve already satisfied from My Courses.
+        </p>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              to="/courses"
-              className="inline-flex items-center gap-2 rounded-lg bg-[hsl(var(--brand))]/15 px-4 py-2 text-sm font-medium text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand))]/20 transition-colors"
-            >
-              Open course graph
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/about"
-              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors"
-            >
-              Learn how data is sourced
-            </Link>
-          </div>
-        </motion.div>
+        <div className="relative mt-4">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search programme (e.g. Actuarial, Computer Science)"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          />
+          {results.length > 0 ? (
+            <div className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-border bg-popover shadow-lg">
+              {results.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => selectProgram(p.id)}
+                  className="w-full px-3 py-2 text-left hover:bg-accent"
+                >
+                  <div className="text-sm font-semibold">{p.code}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-1">{p.title}</div>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
 
-        <motion.div variants={itemVariants} className="grid gap-4 md:grid-cols-3">
-          {roadmap.map((item) => {
-            const Icon = item.icon
-            return (
-              <div key={item.title} className="rounded-2xl liquid-glass p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-foreground">
-                    <Icon className="h-4 w-4 text-[hsl(var(--brand))]" />
-                    <h2 className="text-sm font-semibold">{item.title}</h2>
-                  </div>
-                  <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    {item.status}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground">{item.desc}</p>
+        {loading ? <div className="mt-4 text-sm text-muted-foreground">Loading program roadmap…</div> : null}
+
+        {selected ? (
+          <div className="mt-5 grid gap-4 md:grid-cols-[1.2fr_1fr]">
+            <div className="rounded-lg border border-border bg-muted/20 p-3">
+              <h2 className="text-base font-semibold">{selected.code} — {selected.title}</h2>
+
+              <div className="mt-3 text-xs text-muted-foreground">
+                Progress: {progress.done}/{progress.total} required courses completed
               </div>
-            )
-          })}
-        </motion.div>
+              <div className="mt-1 h-2 w-full overflow-hidden rounded-full border border-border bg-background">
+                <div className="h-full bg-[hsl(var(--brand))]" style={{ width: `${progress.pct}%` }} />
+              </div>
 
-        <motion.div variants={itemVariants} className="mt-8 rounded-2xl liquid-glass p-5">
-          <h3 className="text-sm font-semibold text-foreground">Initial programme coverage</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            These are the first program tracks being prioritized for full roadmap support.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {starterPrograms.map((program) => (
-              <span
-                key={program}
-                className="rounded-md border border-border/70 bg-background px-2.5 py-1 text-xs text-muted-foreground"
-              >
-                {program}
-              </span>
-            ))}
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold">Required courses roadmap</h3>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {requiredCodes.map((code) => {
+                    const done = completed.has(code)
+                    return (
+                      <Link
+                        key={code}
+                        to={`/courses?course=${code}`}
+                        className={`rounded-md border px-2.5 py-1 text-xs ${done ? "border-[hsl(var(--brand))/0.6] bg-[hsl(var(--brand))/0.18]" : "border-border bg-background"}`}
+                      >
+                        {code} {done ? "✓" : ""}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {selected.minimumAverageSRequired ? (
+                <details className="mt-4 rounded-md border border-border bg-background p-2">
+                  <summary className="cursor-pointer text-sm font-medium">Average requirements</summary>
+                  <div
+                    className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc"
+                    dangerouslySetInnerHTML={{ __html: selected.minimumAverageSRequired }}
+                  />
+                </details>
+              ) : null}
+            </div>
+
+            <div className="rounded-lg border border-border bg-muted/20 p-3">
+              <h3 className="text-sm font-semibold">Potential bottlenecks</h3>
+              <p className="mt-1 text-xs text-muted-foreground">Missing required courses with the highest prereq depth first.</p>
+              <div className="mt-2 space-y-2">
+                {bottlenecks.map((b) => (
+                  <Link
+                    key={b.code}
+                    to={`/courses?course=${b.code}`}
+                    className="block rounded-md border border-border bg-background px-2.5 py-2 text-xs hover:bg-accent"
+                  >
+                    <div className="font-semibold">{b.code}</div>
+                    <div className="text-muted-foreground">Prereq depth: {b.prereqCount}</div>
+                  </Link>
+                ))}
+                {bottlenecks.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No bottlenecks found — great progress.</p>
+                ) : null}
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-border/70">
+                <h3 className="text-sm font-semibold">Term-by-term preview</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Quick suggestion from your completed-course profile.</p>
+                <div className="mt-2">
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Next term candidates</div>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {termPlanPreview.nextTerm.length > 0 ? termPlanPreview.nextTerm.map((x) => (
+                      <Link key={x.code} to={`/courses?course=${x.code}`} className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-accent">
+                        {x.code}
+                      </Link>
+                    )) : <span className="text-xs text-muted-foreground">No obvious low-depth candidates.</span>}
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Later (higher prereq depth)</div>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {termPlanPreview.later.length > 0 ? termPlanPreview.later.map((x) => (
+                      <Link key={x.code} to={`/courses?course=${x.code}`} className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-accent">
+                        {x.code}
+                      </Link>
+                    )) : <span className="text-xs text-muted-foreground">No deferred candidates.</span>}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </motion.div>
+        ) : null}
       </div>
-    </motion.div>
+    </div>
   )
 }

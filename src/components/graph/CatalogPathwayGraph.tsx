@@ -81,13 +81,14 @@ export function CatalogPathwayGraph({
 
     for (const course of courseMap.values()) {
       const isTarget = course.code === targetCode
-      const isCompleted = completedCodes?.has(course.code)
-      const isDirect = directCompletedCodes?.has(course.code)
-      const isAssumed = Boolean(isCompleted && !isDirect)
+      const isDirect = Boolean(directCompletedCodes?.has(course.code))
+      const isAssumed = Boolean(completedCodes?.has(course.code) && !isDirect)
+      const isCompleted = isDirect
       const focusHidden = focusedMode && !focusVisible.has(course.code)
       nodeList.push({
         id: course.code,
         data: { label: `${course.code}\n${course.title}${isAssumed ? "\n(assumed prereq)" : ""}` },
+        ariaLabel: isAssumed ? `Required for completed course (assumed satisfied): ${course.code}` : course.code,
         type: "default",
         hidden: (hiddenCodes?.has(course.code) || focusHidden) || false,
         position: { x: 0, y: 0 },
@@ -98,15 +99,23 @@ export function CatalogPathwayGraph({
             ? "3px solid hsl(var(--brand))"
             : isCompleted
               ? "2px solid hsl(42 90% 44%)"
-              : "1px solid hsl(var(--border))",
-          background: isAssumed ? "hsl(45 100% 94% / 0.85)" : isCompleted ? "hsl(42 100% 92% / 0.92)" : "hsl(var(--card) / 0.98)",
-          color: "hsl(var(--foreground))",
+              : isAssumed
+                ? "1.5px solid hsl(42 70% 55%)"
+                : "1px solid hsl(var(--border))",
+          background: isAssumed
+            ? "hsl(45 100% 95% / 0.88)"
+            : isCompleted
+              ? "hsl(42 100% 91% / 0.95)"
+              : "hsl(var(--card) / 0.98)",
+          color: (isCompleted || isAssumed) ? "#151515" : "hsl(var(--foreground))",
           opacity: hiddenCodes?.has(course.code) ? 0 : 1,
           boxShadow: isTarget
             ? "0 0 0 4px hsl(var(--brand) / 0.28), 0 10px 24px hsl(42 100% 45% / 0.26)"
             : isCompleted
               ? "0 0 0 2px hsl(42 85% 48% / 0.24), 0 6px 14px hsl(42 85% 40% / 0.2)"
-              : "0 2px 8px hsl(220 20% 20% / 0.08)",
+              : isAssumed
+                ? "0 0 0 1px hsl(42 80% 60% / 0.2)"
+                : "0 2px 8px hsl(220 20% 20% / 0.08)",
           fontSize: 12,
           lineHeight: 1.25,
           whiteSpace: "pre-wrap",
