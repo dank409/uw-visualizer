@@ -37,6 +37,19 @@ function run() {
   assert(hasTitleLike(physGroups, "physics"), "PHYS: expected physics-oriented title")
   assert(!hasTitleLike(physGroups, "linear algebra"), "PHYS: should not default to linear algebra")
 
+  // CS-like nested/equivalent + grade sample
+  const csHtml = `
+  <div>
+    <div data-test="ruleView-A-result">Prereq: (CS 241 or ECE 251) and MATH 239.</div>
+    <div data-test="ruleView-B-result">MATH 135 or equivalent, with >=75%.</div>
+  </div>`
+
+  const csGroups = parseTrackerGroups(csHtml)
+  assert(hasTitleLike(csGroups, "computer science") || hasTitleLike(csGroups, "cs"), "CS: expected CS-oriented title")
+  assert(csGroups.some((g) => g.options.some((o) => o.kind === "course" && o.code === "CS241")), "CS: expected CS241 extracted")
+  assert(csGroups.some((g) => g.options.some((o) => o.kind === "course" && o.code === "ECE251")), "CS: expected ECE251 extracted")
+  assert(csGroups.some((g) => g.options.some((o) => o.kind === "course" && o.code === "MATH135" && o.gradeMin === 75)), "CS: expected >=75% grade parsing")
+
   // MATH linear algebra explicit sample
   const mathHtml = `
   <div>

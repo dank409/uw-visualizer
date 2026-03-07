@@ -23,13 +23,22 @@ export function parseTrackerGroups(html?: string): RequirementGroup[] {
   const rows = Array.from(doc.querySelectorAll('[data-test$="-result"]')).map((row, idx) => {
     const text = (row.textContent || "").replace(/\s+/g, " ").trim()
     const anchors = Array.from(row.querySelectorAll("a")).map((a) => (a.textContent || "").trim())
-    const courses = anchors.map(normalize).filter((a) => isCourseCode(a))
-    const programs = anchors.filter((a) => !isCourseCode(a))
-    const gradeMatch = text.match(/minimum grade of\s*(\d+)%/i)
-    const gradeMin = gradeMatch ? Number(gradeMatch[1]) : undefined
-    const mode: "any" | "all" = /at least\s*1|complete\s*1\s*of|one\s*of\s*the\s*following/i.test(text)
+
+    const courseFromAnchors = anchors.map(normalize).filter((a) => isCourseCode(a))
+    const programFromAnchors = anchors.filter((a) => !isCourseCode(a))
+
+    // Fallback regex extraction to handle rows where links are missing or malformed
+    const regexCourses = Array.from(text.matchAll(/\b([A-Z]{2,}\s*\d{2,4}[A-Z]?)\b/g)).map((m) => normalize(m[1]))
+    const courses = [...new Set([...courseFromAnchors, ...regexCourses])]
+    const programs = programFromAnchors
+
+    const gradeMatch = text.match(/minimum grade of\s*(\d+)%|>=\s*(\d+)%/i)
+    const gradeMin = gradeMatch ? Number(gradeMatch[1] || gradeMatch[2]) : undefined
+
+    const mode: "any" | "all" = /at least\s*1|complete\s*1\s*of|one\s*of\s*the\s*following|\bor\b/i.test(text)
       ? "any"
       : "all"
+
     return { idx, text, courses, programs, gradeMin, mode }
   })
 
