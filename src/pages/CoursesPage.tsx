@@ -130,7 +130,7 @@ function parseTrackerGroups(html?: string): RequirementGroup[] {
   const relevant = rows.filter((r) => !/not completed nor concurrently enrolled/i.test(r.text))
   const groups: RequirementGroup[] = []
 
-  const titleFromSubjects = (courses: string[], mode: "any" | "all") => {
+  const titleFromSubjects = (courses: string[], mode: "any" | "all", text: string) => {
     const counts = new Map<string, number>()
     for (const c of courses) {
       const m = c.match(/^([A-Z]+)/)
@@ -138,6 +138,23 @@ function parseTrackerGroups(html?: string): RequirementGroup[] {
       counts.set(subj, (counts.get(subj) || 0) + 1)
     }
     const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1])
+    const subjSet = new Set(ranked.map(([s]) => s))
+
+    // Course-family aware naming (no hardcoded linear algebra carryover)
+    const lower = text.toLowerCase()
+    if (/linear algebra/.test(lower)) {
+      return mode === "any" ? "Linear Algebra options (choose 1)" : "Linear Algebra requirements"
+    }
+    if (subjSet.has("PHYS")) {
+      return mode === "any" ? "Physics Core options (choose 1)" : "Physics Core requirements"
+    }
+    if (subjSet.has("ACTSC") || subjSet.has("STAT")) {
+      return mode === "any" ? "Statistics & Actuarial options (choose 1)" : "Actuarial Science foundations"
+    }
+    if (subjSet.has("CS")) {
+      return mode === "any" ? "Computer Science options (choose 1)" : "Computer Science requirements"
+    }
+
     if (ranked.length === 0) return mode === "any" ? "Course options (choose 1)" : "Course requirements"
     if (ranked.length === 1) return `${ranked[0][0]} ${mode === "any" ? "options (choose 1)" : "requirements"}`
     return `${ranked[0][0]}/${ranked[1][0]} ${mode === "any" ? "options (choose 1)" : "requirements"}`
@@ -172,7 +189,7 @@ function parseTrackerGroups(html?: string): RequirementGroup[] {
     if (/enrolled in/i.test(row.text) || (row.programs.length > 0 && row.courses.length === 0)) {
       title = `Program enrollment ${row.mode === "any" ? "(choose 1)" : "requirements"}`
     } else {
-      title = titleFromSubjects(row.courses, row.mode)
+      title = titleFromSubjects(row.courses, row.mode, row.text)
     }
 
     groups.push({
@@ -206,7 +223,6 @@ export function CoursesPage() {
 
   const [targetCode, setTargetCode] = useState("")
   const [courseMap, setCourseMap] = useState<Map<string, CourseNodeData>>(new Map())
-  const [selectedCode, setSelectedCode] = useState("")
   const [completedCodes, setCompletedCodes] = useState<Set<string>>(new Set())
   const [completedPrograms, setCompletedPrograms] = useState<Set<string>>(new Set())
   const [hideSatisfiedAlternatives, setHideSatisfiedAlternatives] = useState(true)
@@ -240,7 +256,6 @@ export function CoursesPage() {
       .then((map) => {
         if (!active) return
         setCourseMap(map)
-        setSelectedCode(targetCode)
         setCompletedCodes(new Set())
         setCompletedPrograms(new Set())
       })
@@ -260,20 +275,26 @@ export function CoursesPage() {
   }, [targetCode])
 
 
-  const selected = useMemo(() => (selectedCode ? courseMap.get(selectedCode) || null : null), [selectedCode, courseMap])
   const target = useMemo(() => (targetCode ? courseMap.get(targetCode) || null : null), [targetCode, courseMap])
+  const selected = target
+
+  const trackerGroups = useMemo(() => parseTrackerGroups(target?.prerequisitesHtml), [target])
 
   const immediatePrereqs = useMemo(() => {
     if (!target) return []
-    return target.prerequisiteCodes.map((c) => courseMap.get(c)).filter((c): c is CourseNodeData => Boolean(c))
-  }, [target, courseMap])
+    const topCodes = [...new Set(
+      trackerGroups
+        .flatMap((g) => g.options)
+        .filter((o) => o.kind === "course" && o.code)
+        .map((o) => o.code as string)
+    )]
+    return topCodes.map((c) => courseMap.get(c)).filter((c): c is CourseNodeData => Boolean(c))
+  }, [target, trackerGroups, courseMap])
 
   const summarySentence = useMemo(
-    () => (target ? makeSummarySentence(target.code, target.prerequisiteCodes, target.prerequisitesHtml) : ""),
-    [target]
+    () => (target ? makeSummarySentence(target.code, immediatePrereqs.map((c) => c.code), target.prerequisitesHtml) : ""),
+    [target, immediatePrereqs]
   )
-
-  const trackerGroups = useMemo(() => parseTrackerGroups(target?.prerequisitesHtml), [target])
 
   useEffect(() => {
     if (!target) return
@@ -489,12 +510,12 @@ export function CoursesPage() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Target course</div>
               <div className="mt-1 font-semibold">{target.code}</div>
               <div className="text-sm text-muted-foreground">{target.title}</div>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
                 <a
                   href={target.catalogUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg border border-[hsl(var(--brand))/0.65] bg-[hsl(var(--brand))] px-3.5 py-2 text-xs font-semibold text-black shadow-sm transition hover:scale-[1.02] hover:shadow-md"
+                  className="rounded-lg border border-[hsl(var(--brand))/0.65] bg-[hsl(var(--brand))] px-4 py-3 text-center text-sm md:text-base font-bold text-black shadow-sm transition hover:scale-[1.02] hover:shadow-[0_0_16px_hsl(var(--brand)/0.5)]"
                 >
                   📅 Open Official Calendar Page
                 </a>
@@ -502,7 +523,7 @@ export function CoursesPage() {
                   href={`https://uwflow.com/course/${target.code.toLowerCase()}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg border border-[hsl(var(--brand))/0.65] bg-[hsl(var(--brand))] px-3.5 py-2 text-xs font-semibold text-black shadow-sm transition hover:scale-[1.02] hover:shadow-md"
+                  className="rounded-lg border border-[hsl(var(--brand))/0.65] bg-[hsl(var(--brand))] px-4 py-3 text-center text-sm md:text-base font-bold text-black shadow-sm transition hover:scale-[1.02] hover:shadow-[0_0_16px_hsl(var(--brand)/0.5)]"
                 >
                   ⭐ See Reviews & Ratings on UWFlow
                 </a>
@@ -635,7 +656,6 @@ export function CoursesPage() {
                   completedCodes={effectiveCompletedCodes}
                   directCompletedCodes={completedCodes}
                   hiddenCodes={hiddenCodes}
-                  onSelectCode={(code) => setSelectedCode(code)}
                 />
               </div>
 
@@ -652,7 +672,7 @@ export function CoursesPage() {
                         {row.courses.map((c) => (
                           <button
                             key={`${row.level}-${c.code}`}
-                            onClick={() => setSelectedCode(c.code)}
+                            onClick={() => setSearchParams({ course: c.code })}
                             className="rounded-md border border-border bg-background px-2 py-1 text-left text-xs hover:bg-accent"
                           >
                             <div className="font-semibold">{c.code}</div>
@@ -678,7 +698,7 @@ export function CoursesPage() {
               {immediatePrereqs.length > 0 ? (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {immediatePrereqs.map((p) => (
-                    <button key={p.code} onClick={() => setSelectedCode(p.code)} className="rounded-md border border-border bg-background px-2.5 py-1 text-xs hover:bg-accent">
+                    <button key={p.code} onClick={() => setSearchParams({ course: p.code })} className="rounded-md border border-border bg-background px-2.5 py-1 text-xs hover:bg-accent">
                       {p.code}
                     </button>
                   ))}

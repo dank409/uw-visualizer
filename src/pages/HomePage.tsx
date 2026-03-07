@@ -7,9 +7,11 @@ const advancedCourses = ["MATH237", "MATH239", "CS341", "STAT230", "AMATH231", "
 export function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <InteractiveHero />
+      <div className="mb-12 md:mb-14">
+        <InteractiveHero />
+      </div>
 
-      <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-4 md:pt-6 space-y-4">
+      <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-0 md:pt-0 space-y-4">
         <section className="rounded-xl border border-border bg-card p-4 md:p-5">
           <ul className="grid gap-1.5 text-sm text-muted-foreground md:grid-cols-2">
             <li>• Visualize full prerequisite pathways</li>
