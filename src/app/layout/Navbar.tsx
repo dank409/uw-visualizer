@@ -13,6 +13,7 @@ export function Navbar() {
   const [focusedIndex, setFocusedIndex] = useState(-1)
   const searchRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 })
 
   // Load course index on mount
   useEffect(() => {
@@ -34,6 +35,22 @@ export function Navbar() {
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    const updateRect = () => {
+      if (!inputRef.current) return
+      const rect = inputRef.current.getBoundingClientRect()
+      setDropdownRect({ top: rect.bottom + 6, left: rect.left, width: rect.width })
+    }
+
+    updateRect()
+    window.addEventListener("resize", updateRect)
+    window.addEventListener("scroll", updateRect, true)
+    return () => {
+      window.removeEventListener("resize", updateRect)
+      window.removeEventListener("scroll", updateRect, true)
+    }
+  }, [isOpen, searchQuery])
 
   const handleSelect = (course: Course) => {
     navigate(`/courses?course=${encodeURIComponent(course.code)}`)
@@ -89,7 +106,15 @@ export function Navbar() {
             style={{ borderColor: 'hsl(var(--search-border))' }}
           />
           {isOpen && results.length > 0 && (
-            <div className="absolute z-[1100] mt-2 max-h-64 w-full overflow-auto rounded-xl border liquid-glass animate-in fade-in-0 zoom-in-95 duration-100" style={{ borderColor: 'hsl(var(--dropdown-border) / 0.65)' }}>
+            <div
+              className="fixed z-[1200] max-h-64 overflow-auto rounded-xl border liquid-glass animate-in fade-in-0 zoom-in-95 duration-100"
+              style={{
+                top: dropdownRect.top,
+                left: dropdownRect.left,
+                width: dropdownRect.width,
+                borderColor: 'hsl(var(--dropdown-border) / 0.65)'
+              }}
+            >
               {results.map((course: Course, index: number) => (
                 <button
                   key={course.code}

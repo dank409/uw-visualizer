@@ -9,7 +9,7 @@ export function HomePage() {
     <div className="flex min-h-screen flex-col">
       <InteractiveHero />
 
-      <main className="mx-auto w-full max-w-6xl px-4 pb-12 -mt-8 md:-mt-12">
+      <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-4 md:pt-6">
         <section className="rounded-xl border border-border bg-card p-5">
           <ul className="grid gap-1.5 text-sm text-muted-foreground md:grid-cols-2">
             <li>• Visualize full prerequisite pathways</li>

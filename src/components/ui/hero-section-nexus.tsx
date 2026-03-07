@@ -401,8 +401,8 @@ const InteractiveHero: React.FC = () => {
    const mousePositionRef = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
 
    const DOT_SPACING = 25;
-   const BASE_OPACITY_MIN = 0.40;
-   const BASE_OPACITY_MAX = 0.50;
+   const BASE_OPACITY_MIN = 0.10;
+   const BASE_OPACITY_MAX = 0.18;
    const BASE_RADIUS = 1;
    const INTERACTION_RADIUS = 150;
    const INTERACTION_RADIUS_SQ = INTERACTION_RADIUS * INTERACTION_RADIUS;
@@ -730,7 +730,7 @@ const InteractiveHero: React.FC = () => {
             </AnimatePresence>
         </motion.header>
 
-        <main className="flex-grow flex flex-col items-center justify-center text-center px-4 pt-8 pb-16 relative z-10">
+        <main className="flex-grow flex min-h-[calc(100svh-120px)] flex-col items-center justify-center text-center px-4 pt-8 pb-24 relative z-10">
 
             <motion.h1
                 variants={headlineVariants}
