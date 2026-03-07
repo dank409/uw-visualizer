@@ -1,205 +1,163 @@
 import { useEffect, useMemo, useState } from "react"
+import { Search, AlertTriangle } from "lucide-react"
 import { useSearchParams } from "react-router-dom"
-import { AlertTriangle, CheckCircle2, Circle, Search, XCircle } from "lucide-react"
-import { buildPrerequisiteTree, type PrerequisiteRule, type CourseRequirement } from "@/lib/prereq/prereqTree"
-import { getCourse, loadCourseIndex, searchCourses } from "@/lib/courseIndex"
-import type { Course } from "@/lib/types"
+import { CatalogPathwayGraph } from "@/components/graph/CatalogPathwayGraph"
+import {
+  buildCourseTreeFromCatalog,
+  clearCatalogCache,
+  resolveCourseByCode,
+  searchCatalogCourses,
+  type CatalogCourseSearchItem,
+  type CourseNodeData,
+} from "@/lib/uwCatalog"
 
-function normalizeCode(code: string) {
+function normalize(code: string) {
   return code.replace(/\s+/g, "").toUpperCase()
 }
 
-function parseEnrollmentRestrictions(html?: string | null): string[] {
+function summarizePrereqHtml(html?: string): string[] {
   if (!html) return []
-  const match = html.match(/Enrolled in\s*<span>(.*?)<\/span>/is)
-  if (!match) return []
-
-  const out: string[] = []
-  const pattern = />([^<]+)<\/a>/g
-  let m: RegExpExecArray | null
-  while ((m = pattern.exec(match[1])) !== null) {
-    const val = m[1].replace(/&amp;/g, "&").trim()
-    if (val && !out.includes(val)) out.push(val)
-  }
-  return out
-}
-
-function parseAntireqCodes(html?: string | null): string[] {
-  if (!html) return []
-  const codes = new Set<string>()
-  const pattern = /<a[^>]*>([A-Z]{2,}\s*\d{3,}[A-Z]?)<\/a>/gi
-  let m: RegExpExecArray | null
-  while ((m = pattern.exec(html)) !== null) {
-    codes.add(normalizeCode(m[1]))
-  }
-  return [...codes]
-}
-
-function evaluateRequirement(
-  requirement: PrerequisiteRule | CourseRequirement,
-  completed: Set<string>
-): boolean {
-  if (requirement.type === "course") {
-    return completed.has(normalizeCode(requirement.course_code))
-  }
-
-  if (requirement.logic === "AND") {
-    return requirement.requirements.every((r) => evaluateRequirement(r, completed))
-  }
-
-  return requirement.requirements.some((r) => evaluateRequirement(r, completed))
-}
-
-function RequirementNode({
-  requirement,
-  completed,
-  onToggle,
-  depth = 0,
-}: {
-  requirement: PrerequisiteRule | CourseRequirement
-  completed: Set<string>
-  onToggle: (code: string) => void
-  depth?: number
-}) {
-  if (requirement.type === "course") {
-    const code = normalizeCode(requirement.course_code)
-    const course = getCourse(code)
-    const done = completed.has(code)
-    return (
-      <button
-        onClick={() => onToggle(code)}
-        className={`w-full rounded-lg border px-3 py-2 text-left transition ${
-          done
-            ? "border-emerald-300 bg-emerald-50 text-emerald-900"
-            : "border-border bg-card hover:bg-accent"
-        }`}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="font-semibold">{code}</div>
-            <div className="text-xs text-muted-foreground line-clamp-1">{course?.title || "Course"}</div>
-            {requirement.grade_min ? (
-              <div className="mt-1 text-[11px] text-amber-600">Minimum grade: {requirement.grade_min}%</div>
-            ) : null}
-          </div>
-          {done ? <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5" /> : <Circle className="h-4 w-4 text-muted-foreground mt-0.5" />}
-        </div>
-      </button>
-    )
-  }
-
-  const satisfied = evaluateRequirement(requirement, completed)
-
-  return (
-    <div className="space-y-2">
-      <div
-        className={`rounded-lg border px-3 py-2 text-xs font-medium ${
-          satisfied
-            ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-            : "border-border bg-muted/30 text-foreground"
-        }`}
-      >
-        {requirement.logic === "AND" ? "All of the following" : "At least one of the following"}
-      </div>
-      <div className={`space-y-2 ${depth > 0 ? "pl-3 border-l border-border/70" : ""}`}>
-        {requirement.requirements.map((child, idx) => (
-          <RequirementNode
-            key={idx}
-            requirement={child}
-            completed={completed}
-            onToggle={onToggle}
-            depth={depth + 1}
-          />
-        ))}
-      </div>
-    </div>
-  )
+  const doc = new DOMParser().parseFromString(html, "text/html")
+  const lines = Array.from(doc.querySelectorAll('[data-test$="-result"]'))
+    .map((el) => (el.textContent || "").replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+  return lines.slice(0, 6)
 }
 
 export function CoursesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState("")
+  const [results, setResults] = useState<CatalogCourseSearchItem[]>([])
   const [open, setOpen] = useState(false)
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
-  const [selectedProgram, setSelectedProgram] = useState("")
-  const [completed, setCompleted] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const [targetCode, setTargetCode] = useState("")
+  const [courseMap, setCourseMap] = useState<Map<string, CourseNodeData>>(new Map())
+  const [selectedCode, setSelectedCode] = useState("")
 
   useEffect(() => {
-    loadCourseIndex().then(() => setLoading(false))
-  }, [])
-
-  useEffect(() => {
-    if (loading) return
     const code = searchParams.get("course")
     if (!code) return
-    const course = getCourse(code)
-    if (course) setSelectedCourse(course)
-  }, [loading, searchParams])
+    const normalized = normalize(code)
+    setTargetCode(normalized)
+  }, [searchParams])
 
-  const results = useMemo(() => {
-    if (!query.trim()) return []
-    return searchCourses(query).slice(0, 12)
+  useEffect(() => {
+    if (!targetCode) return
+    let active = true
+    setLoading(true)
+    setError(null)
+
+    buildCourseTreeFromCatalog(targetCode, 4)
+      .then((map) => {
+        if (!active) return
+        setCourseMap(map)
+        setSelectedCode(targetCode)
+      })
+      .catch((e) => {
+        if (!active) return
+        setError(`Could not fetch accurate data from the official catalog for ${targetCode}. Please verify at https://uwaterloo.ca/academic-calendar/undergraduate-studies/catalog#/courses`)
+        console.error(e)
+      })
+      .finally(() => {
+        if (!active) return
+        setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [targetCode])
+
+  useEffect(() => {
+    const q = query.trim()
+    if (!q) {
+      setResults([])
+      return
+    }
+
+    const handle = setTimeout(() => {
+      searchCatalogCourses(q)
+        .then((r) => setResults(r.slice(0, 12)))
+        .catch(() => setResults([]))
+    }, 180)
+
+    return () => clearTimeout(handle)
   }, [query])
 
-  const tree = useMemo(() => {
-    if (!selectedCourse) return null
-    return buildPrerequisiteTree(selectedCourse.code)
-  }, [selectedCourse])
+  const selected = useMemo(() => {
+    if (!selectedCode) return null
+    return courseMap.get(selectedCode) || null
+  }, [selectedCode, courseMap])
 
-  const academicReady = useMemo(() => {
-    if (!tree?.prerequisites) return true
-    return evaluateRequirement(tree.prerequisites, completed)
-  }, [tree, completed])
+  const target = useMemo(() => {
+    if (!targetCode) return null
+    return courseMap.get(targetCode) || null
+  }, [targetCode, courseMap])
 
-  const enrollmentRestrictions = useMemo(
-    () => parseEnrollmentRestrictions(selectedCourse?.prereqText),
-    [selectedCourse]
-  )
+  const immediatePrereqs = useMemo(() => {
+    if (!target) return []
+    return target.prerequisiteCodes
+      .map((code) => courseMap.get(code))
+      .filter((c): c is CourseNodeData => Boolean(c))
+  }, [target, courseMap])
 
-  const antireqCodes = useMemo(
-    () => parseAntireqCodes(selectedCourse?.antireqText),
-    [selectedCourse]
-  )
+  const pathwaySummary = useMemo(() => summarizePrereqHtml(target?.prerequisitesHtml), [target])
 
-  const antireqConflicts = useMemo(
-    () => antireqCodes.filter((code) => completed.has(code)),
-    [antireqCodes, completed]
-  )
+  const mobileLevels = useMemo(() => {
+    if (!target) return [] as Array<{ level: number; courses: CourseNodeData[] }>
 
-  const programEligible = useMemo(() => {
-    if (!selectedProgram.trim() || enrollmentRestrictions.length === 0) return true
-    const p = selectedProgram.trim().toLowerCase()
-    return enrollmentRestrictions.some((r) => r.toLowerCase().includes(p))
-  }, [selectedProgram, enrollmentRestrictions])
+    const levels = new Map<number, Set<string>>()
+    const seen = new Set<string>()
 
-  const toggleCourse = (code: string) => {
-    setCompleted((prev) => {
-      const next = new Set(prev)
-      if (next.has(code)) next.delete(code)
-      else next.add(code)
-      return next
-    })
-  }
+    const walk = (code: string, level: number) => {
+      if (level > 4) return
+      if (!levels.has(level)) levels.set(level, new Set())
+      levels.get(level)!.add(code)
+      if (seen.has(`${code}:${level}`)) return
+      seen.add(`${code}:${level}`)
 
-  const selectCourse = (course: Course) => {
-    setSelectedCourse(course)
-    setSearchParams({ course: course.code })
+      const node = courseMap.get(code)
+      if (!node) return
+      for (const prereq of node.prerequisiteCodes) {
+        walk(prereq, level + 1)
+      }
+    }
+
+    walk(target.code, 0)
+
+    return [...levels.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([level, codes]) => ({
+        level,
+        courses: [...codes]
+          .map((c) => courseMap.get(c))
+          .filter((c): c is CourseNodeData => Boolean(c)),
+      }))
+  }, [target, courseMap])
+
+  const selectResult = async (item: CatalogCourseSearchItem) => {
+    const code = normalize(item.__catalogCourseId)
     setQuery("")
     setOpen(false)
-  }
+    setSearchParams({ course: code })
 
-  if (loading) {
-    return <div className="p-8 text-muted-foreground">Loading course data…</div>
+    // sanity check that exact code resolves in official API
+    const exact = await resolveCourseByCode(code)
+    if (!exact) {
+      setError(`Official catalog could not resolve ${code}. Please verify directly on the calendar site.`)
+      return
+    }
   }
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
-      <div className="grid gap-4 lg:grid-cols-[420px_1fr]">
-        <section className="rounded-xl border border-border bg-card p-4">
-          <h1 className="text-xl font-semibold">Course Planner</h1>
+      <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
+        <section className="rounded-xl border border-border bg-card p-4 h-fit">
+          <h1 className="text-xl font-semibold">UWVisualizer</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Pick a course, then mark completed courses to check if you’re ready.
+            Official-data course pathway visualizer for UWaterloo.
           </p>
 
           <div className="relative mt-4">
@@ -211,18 +169,18 @@ export function CoursesPage() {
                 setOpen(true)
               }}
               onFocus={() => setOpen(true)}
-              placeholder="Search by code or title"
-              className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--brand))/0.4]"
+              placeholder="Search course (e.g., MATH237)"
+              className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--brand))/0.35]"
             />
             {open && results.length > 0 ? (
               <div className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-border bg-popover shadow-lg">
                 {results.map((c) => (
                   <button
-                    key={c.code}
-                    onClick={() => selectCourse(c)}
+                    key={c.id}
+                    onClick={() => selectResult(c)}
                     className="w-full px-3 py-2 text-left hover:bg-accent"
                   >
-                    <div className="text-sm font-semibold">{c.code}</div>
+                    <div className="text-sm font-semibold">{normalize(c.__catalogCourseId)}</div>
                     <div className="text-xs text-muted-foreground line-clamp-1">{c.title}</div>
                   </button>
                 ))}
@@ -230,91 +188,167 @@ export function CoursesPage() {
             ) : null}
           </div>
 
-          {selectedCourse ? (
+          {loading ? <p className="mt-4 text-sm text-muted-foreground">Fetching official catalog data…</p> : null}
+          {error ? (
+            <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-700">{error}</div>
+          ) : null}
+
+          {target ? (
             <div className="mt-4 rounded-lg border border-border bg-muted/30 p-3">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Selected course</div>
-              <div className="mt-1 font-semibold">{selectedCourse.code}</div>
-              <div className="text-sm text-muted-foreground">{selectedCourse.title}</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Target course</div>
+              <div className="mt-1 font-semibold">{target.code}</div>
+              <div className="text-sm text-muted-foreground">{target.title}</div>
+              <div className="mt-2 text-xs text-muted-foreground">
+                Nodes shown: {courseMap.size} (depth-limited to 4 levels)
+              </div>
             </div>
           ) : null}
 
-          <div className="mt-4 rounded-lg border border-border bg-muted/30 p-3 space-y-3">
-            <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Academic readiness (beta estimate)</div>
-              <div className={`mt-1 text-sm font-semibold ${academicReady ? "text-emerald-600" : "text-amber-600"}`}>
-                {selectedCourse ? (academicReady ? "Likely eligible" : "Likely not yet eligible") : "Select a course"}
-              </div>
-              <div className="mt-1 text-[11px] text-muted-foreground">Use the official calendar block on the right as the source of truth.</div>
+          <div className="mt-4 rounded-lg border border-amber-300/70 bg-amber-50 p-3 text-xs text-amber-900 space-y-2">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4" />
+              <p>
+                Data source: Official UWaterloo Undergraduate Calendar API only. If a course fails to load accurately,
+                verify directly on the official site.
+              </p>
             </div>
-
-            <div className="pt-2 border-t border-border/70">
-              <label className="text-xs uppercase tracking-wide text-muted-foreground">Program check (optional)</label>
-              <input
-                value={selectedProgram}
-                onChange={(e) => setSelectedProgram(e.target.value)}
-                placeholder="e.g., Mathematics, Computer Science"
-                className="mt-1 w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--brand))/0.4]"
-              />
-              {selectedCourse && selectedProgram.trim() ? (
-                <div className={`mt-2 flex items-center gap-1.5 text-xs ${programEligible ? "text-emerald-600" : "text-red-600"}`}>
-                  {programEligible ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
-                  {programEligible ? "Program appears eligible" : "Program may be restricted"}
-                </div>
-              ) : null}
-            </div>
-
-            {selectedCourse && antireqConflicts.length > 0 ? (
-              <div className="pt-2 border-t border-border/70">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-red-600">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  Antirequisite conflict: {antireqConflicts.join(", ")}
-                </div>
-              </div>
-            ) : null}
-
-            <div className="text-xs text-muted-foreground">Toggle requirement cards on the right to simulate completed courses.</div>
+            <button
+              onClick={() => {
+                clearCatalogCache()
+                if (targetCode) setTargetCode("")
+                setTimeout(() => setTargetCode(normalize(searchParams.get("course") || "")), 0)
+              }}
+              className="rounded-md border border-amber-400/70 bg-white/70 px-2 py-1 text-[11px] hover:bg-white"
+            >
+              Refresh data from official source
+            </button>
           </div>
         </section>
 
-        <section className="rounded-xl border border-border bg-card p-4 space-y-4">
-          {!selectedCourse ? (
-            <div className="py-16 text-center text-muted-foreground">Select a course to view prerequisite structure.</div>
-          ) : (
+        <section className="space-y-4">
+          {target && pathwaySummary.length > 0 ? (
+            <div className="rounded-xl border border-border bg-card p-4">
+              <h3 className="text-sm font-semibold">Pathway summary</h3>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+                {pathwaySummary.map((line, idx) => (
+                  <li key={idx}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {targetCode && courseMap.size > 0 ? (
             <>
+              <div className="hidden md:block">
+                <CatalogPathwayGraph
+                  targetCode={targetCode}
+                  courseMap={courseMap}
+                  onSelectCode={(code) => setSelectedCode(code)}
+                />
+              </div>
+
+              <div className="md:hidden rounded-xl border border-border bg-card p-3">
+                <h3 className="text-sm font-semibold">Pathway levels (mobile view)</h3>
+                <p className="mt-1 text-xs text-muted-foreground">Desktop shows full interactive graph. Mobile shows the same path by levels.</p>
+                <div className="mt-3 space-y-3">
+                  {mobileLevels.map((row) => (
+                    <div key={row.level} className="rounded-lg border border-border bg-muted/20 p-2">
+                      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {row.level === 0 ? "Target" : `Level ${row.level} prerequisites`}
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        {row.courses.map((c) => (
+                          <button
+                            key={`${row.level}-${c.code}`}
+                            onClick={() => setSelectedCode(c.code)}
+                            className="rounded-md border border-border bg-background px-2 py-1 text-left text-xs hover:bg-accent"
+                          >
+                            <div className="font-semibold">{c.code}</div>
+                            <div className="text-[10px] text-muted-foreground line-clamp-2">{c.title}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="h-[460px] md:h-[620px] rounded-xl border border-border bg-card flex items-center justify-center text-muted-foreground">
+              Search for a course to visualize pathways
+            </div>
+          )}
+
+          {target ? (
+            <div className="rounded-xl border border-border bg-card p-4">
+              <h3 className="text-sm font-semibold">Immediate prerequisite options (official parsed links)</h3>
+              {immediatePrereqs.length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {immediatePrereqs.map((p) => (
+                    <button
+                      key={p.code}
+                      onClick={() => setSelectedCode(p.code)}
+                      className="rounded-md border border-border bg-background px-2.5 py-1 text-xs hover:bg-accent"
+                    >
+                      {p.code}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-muted-foreground">No immediate prerequisites detected in official data.</p>
+              )}
+            </div>
+          ) : null}
+
+          {selected ? (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">{selected.code}</h2>
+                <p className="text-sm text-muted-foreground">{selected.title}</p>
+                <a
+                  href={selected.catalogUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-block text-xs text-[hsl(var(--brand-dark))] underline"
+                >
+                  Open official calendar page
+                </a>
+              </div>
+
               <div className="rounded-lg border border-border bg-muted/20 p-3">
-                <h2 className="text-sm font-semibold">Official calendar prerequisite text (source of truth)</h2>
-                {selectedCourse.prereqText ? (
+                <h3 className="text-sm font-semibold">Official prerequisites (verbatim)</h3>
+                {selected.prerequisitesHtml ? (
                   <div
-                    className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc [&_li]:mb-1 [&_span]:text-inherit [&_a]:underline"
-                    dangerouslySetInnerHTML={{ __html: selectedCourse.prereqText }}
+                    className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc [&_li]:mb-1 [&_a]:underline"
+                    dangerouslySetInnerHTML={{ __html: selected.prerequisitesHtml }}
                   />
                 ) : (
-                  <p className="mt-2 text-xs text-muted-foreground">No prerequisites listed in source data.</p>
+                  <p className="mt-2 text-xs text-muted-foreground">No prerequisites listed.</p>
                 )}
               </div>
 
-              {selectedCourse.antireqText ? (
-                <div className="rounded-lg border border-border bg-muted/20 p-3">
-                  <h3 className="text-sm font-semibold">Official antirequisites</h3>
+              <div className="rounded-lg border border-red-200 bg-red-50/60 p-3">
+                <h3 className="text-sm font-semibold text-red-800">Antirequisite conflicts</h3>
+                {selected.antirequisiteCodes.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {selected.antirequisiteCodes.map((code) => (
+                      <span key={code} className="rounded-md border border-red-300 bg-white px-2 py-0.5 text-xs text-red-700">
+                        {code}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">No antirequisites listed.</p>
+                )}
+                {selected.antirequisitesHtml ? (
                   <div
-                    className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc [&_li]:mb-1 [&_span]:text-inherit [&_a]:underline"
-                    dangerouslySetInnerHTML={{ __html: selectedCourse.antireqText }}
+                    className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc [&_li]:mb-1 [&_a]:underline"
+                    dangerouslySetInnerHTML={{ __html: selected.antirequisitesHtml }}
                   />
-                </div>
-              ) : null}
-
-              {tree?.error ? (
-                <div className="text-sm text-destructive">{tree.error}</div>
-              ) : !tree?.prerequisites ? (
-                <div className="py-8 text-center text-muted-foreground">No parsed structure available.</div>
-              ) : (
-                <div className="space-y-3">
-                  <h2 className="text-base font-semibold">Planner view (beta)</h2>
-                  <RequirementNode requirement={tree.prerequisites} completed={completed} onToggle={toggleCourse} />
-                </div>
-              )}
-            </>
-          )}
+                ) : null}
+              </div>
+            </div>
+          ) : null}
         </section>
       </div>
     </div>
