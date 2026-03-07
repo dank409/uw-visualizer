@@ -26,6 +26,13 @@ type RequirementGroup = {
   options: RequirementOption[]
 }
 
+type SavedCourseStatus = "completed" | "in_progress" | "planned"
+
+type SavedCourse = {
+  code: string
+  status: SavedCourseStatus
+}
+
 function normalize(code: string) {
   return code.replace(/\s+/g, "").toUpperCase()
 }
@@ -62,6 +69,46 @@ function makeSummarySentence(code: string, prereqCodes: string[], html?: string)
     : "grade minimums may apply"
   const programReq = html && /enrolled in/i.test(html) ? "plus program enrollment" : ""
   return `${code} requires ${Math.max(1, prereqCodes.length)} prerequisite option(s), ${gradePhrase}${programReq ? `, ${programReq}` : ""}.`
+}
+
+const SAVED_KEY = "uwv.myCourses.v1"
+
+function loadSavedCourses(): SavedCourse[] {
+  try {
+    const raw = localStorage.getItem(SAVED_KEY)
+    if (!raw) return []
+    const arr = JSON.parse(raw) as SavedCourse[]
+    return arr
+      .map((x) => ({ code: normalize(x.code), status: x.status }))
+      .filter((x) => ["completed", "in_progress", "planned"].includes(x.status))
+  } catch {
+    return []
+  }
+}
+
+function saveSavedCourses(courses: SavedCourse[]) {
+  localStorage.setItem(SAVED_KEY, JSON.stringify(courses))
+}
+
+function statusIcon(status: SavedCourseStatus) {
+  if (status === "completed") return "✓"
+  if (status === "in_progress") return "⏳"
+  return "★"
+}
+
+function statusColor(status: SavedCourseStatus) {
+  if (status === "completed") return "text-emerald-600"
+  if (status === "in_progress") return "text-sky-600"
+  return "text-amber-600"
+}
+
+function suggestNextCourses(targetCode: string, allSatisfied: boolean): string[] {
+  const map: Record<string, string[]> = {
+    MATH237: ["MATH237", "AMATH231", "STAT230", "MATH239", "CO250", "PMATH351"],
+    CS136: ["CS136", "CS245", "CS246", "STAT230", "MATH239", "CS240"],
+  }
+  const base = map[targetCode] || [targetCode, "STAT230", "CO250", "MATH239", "AMATH231"]
+  return allSatisfied ? base : base.slice(1)
 }
 
 function parseTrackerGroups(html?: string): RequirementGroup[] {
@@ -184,6 +231,19 @@ export function CoursesPage() {
   const [completedPrograms, setCompletedPrograms] = useState<Set<string>>(new Set())
   const [hideSatisfiedAlternatives, setHideSatisfiedAlternatives] = useState(true)
 
+  const [savedCourses, setSavedCourses] = useState<SavedCourse[]>([])
+  const [myCoursesExpanded, setMyCoursesExpanded] = useState(false)
+  const [myAddQuery, setMyAddQuery] = useState("")
+  const [myAddResults, setMyAddResults] = useState<CatalogCourseSearchItem[]>([])
+  const [myAddOpen, setMyAddOpen] = useState(false)
+  const [myAddStatus, setMyAddStatus] = useState<SavedCourseStatus>("completed")
+
+  useEffect(() => {
+    const initial = loadSavedCourses()
+    setSavedCourses(initial)
+    setMyCoursesExpanded(initial.length > 0)
+  }, [])
+
   useEffect(() => {
     const code = searchParams.get("course")
     if (!code) return
@@ -249,6 +309,14 @@ export function CoursesPage() {
   )
 
   const trackerGroups = useMemo(() => parseTrackerGroups(target?.prerequisitesHtml), [target])
+
+  useEffect(() => {
+    if (!target) return
+    const completed = new Set(
+      savedCourses.filter((c) => c.status === "completed").map((c) => normalize(c.code))
+    )
+    setCompletedCodes(completed)
+  }, [savedCourses, target])
 
   const groupState = useMemo(() => {
     return trackerGroups.map((group) => {
@@ -326,6 +394,22 @@ export function CoursesPage() {
     return target.antirequisiteCodes.filter((code) => completedCodes.has(code))
   }, [target, completedCodes])
 
+  const nextPossibleCourses = useMemo(() => suggestNextCourses(targetCode, allSatisfied), [targetCode, allSatisfied])
+
+  useEffect(() => {
+    const q = myAddQuery.trim()
+    if (!q) {
+      setMyAddResults([])
+      return
+    }
+    const t = setTimeout(() => {
+      searchCatalogCourses(q)
+        .then((r) => setMyAddResults(r.slice(0, 8)))
+        .catch(() => setMyAddResults([]))
+    }, 150)
+    return () => clearTimeout(t)
+  }, [myAddQuery])
+
   const mobileLevels = useMemo(() => {
     if (!target) return [] as Array<{ level: number; courses: CourseNodeData[] }>
     const levels = new Map<number, Set<string>>()
@@ -365,9 +449,36 @@ export function CoursesPage() {
     }
   }
 
+  const upsertSavedCourse = (code: string, status: SavedCourseStatus) => {
+    const normalized = normalize(code)
+    setSavedCourses((prev) => {
+      const existing = prev.find((p) => p.code === normalized)
+      const next = existing
+        ? prev.map((p) => (p.code === normalized ? { ...p, status } : p))
+        : [...prev, { code: normalized, status }]
+      saveSavedCourses(next)
+      return next
+    })
+  }
+
+  const removeSavedCourse = (code: string) => {
+    const normalized = normalize(code)
+    setSavedCourses((prev) => {
+      const next = prev.filter((p) => p.code !== normalized)
+      saveSavedCourses(next)
+      return next
+    })
+  }
+
   const toggleOption = (opt: RequirementOption, checked: boolean) => {
     if (opt.kind === "course") {
       const code = opt.code || ""
+      if (checked) upsertSavedCourse(code, "completed")
+      else {
+        const existing = savedCourses.find((s) => s.code === code)
+        if (existing?.status === "completed") removeSavedCourse(code)
+      }
+
       setCompletedCodes((prev) => {
         const next = new Set(prev)
         if (checked) next.add(code)
@@ -451,6 +562,99 @@ export function CoursesPage() {
               Refresh data from official source
             </button>
           </div>
+
+          <div className="mt-4 rounded-lg border border-border bg-card p-3">
+            <button
+              onClick={() => setMyCoursesExpanded((v) => !v)}
+              className="w-full flex items-center justify-between text-left"
+            >
+              <h3 className="text-sm font-semibold">My Completed & Planned Courses</h3>
+              <span className="text-xs text-muted-foreground">{myCoursesExpanded ? "−" : "+"}</span>
+            </button>
+
+            {myCoursesExpanded ? (
+              <div className="mt-3 space-y-2">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      value={myAddQuery}
+                      onChange={(e) => {
+                        setMyAddQuery(e.target.value)
+                        setMyAddOpen(true)
+                      }}
+                      onFocus={() => setMyAddOpen(true)}
+                      placeholder="Add course"
+                      className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                    />
+                    {myAddOpen && myAddResults.length > 0 ? (
+                      <div className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-md border border-border bg-popover shadow-lg">
+                        {myAddResults.map((r) => (
+                          <button
+                            key={r.id}
+                            onClick={() => {
+                              upsertSavedCourse(normalize(r.__catalogCourseId), myAddStatus)
+                              setMyAddQuery("")
+                              setMyAddOpen(false)
+                            }}
+                            className="w-full px-2 py-1.5 text-left hover:bg-accent"
+                          >
+                            <div className="text-xs font-semibold">{normalize(r.__catalogCourseId)}</div>
+                            <div className="text-[11px] text-muted-foreground line-clamp-1">{r.title}</div>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                  <select
+                    value={myAddStatus}
+                    onChange={(e) => setMyAddStatus(e.target.value as SavedCourseStatus)}
+                    className="rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+                  >
+                    <option value="completed">Completed</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="planned">Planned</option>
+                  </select>
+                </div>
+
+                {savedCourses.length > 0 ? (
+                  <>
+                    <div className="max-h-64 space-y-1 overflow-auto pr-1">
+                      {savedCourses.map((c) => (
+                        <div key={c.code} className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5 text-xs">
+                          <span className={statusColor(c.status)}>{statusIcon(c.status)}</span>
+                          <span className="font-medium flex-1">{c.code}</span>
+                          <select
+                            value={c.status}
+                            onChange={(e) => upsertSavedCourse(c.code, e.target.value as SavedCourseStatus)}
+                            className="rounded border border-border bg-background px-1.5 py-0.5 text-[11px]"
+                          >
+                            <option value="completed">Completed</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="planned">Planned</option>
+                          </select>
+                          <button onClick={() => removeSavedCourse(c.code)} className="text-muted-foreground hover:text-red-600">✕</button>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (!confirm("Clear all saved courses?")) return
+                        setSavedCourses([])
+                        saveSavedCourses([])
+                        setCompletedCodes(new Set())
+                        setCompletedPrograms(new Set())
+                      }}
+                      className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-accent"
+                    >
+                      Clear all saved
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Add courses you've taken/planned using + or by checking in trackers.</p>
+                )}
+              </div>
+            ) : null}
+          </div>
         </section>
 
         <section className="space-y-4">
@@ -499,6 +703,17 @@ export function CoursesPage() {
           )}
 
           {target ? (
+            <a
+              href={`https://uwflow.com/course/${target.code.toLowerCase()}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block text-xs text-[hsl(var(--brand-dark))] underline"
+            >
+              See student reviews and enrollment stats on UWFlow →
+            </a>
+          ) : null}
+
+          {target ? (
             <div className="rounded-xl border border-border bg-card p-4">
               <h3 className="text-sm font-semibold">At-a-glance requirement groups</h3>
               {immediatePrereqs.length > 0 ? (
@@ -512,6 +727,25 @@ export function CoursesPage() {
               ) : (
                 <p className="mt-2 text-xs text-muted-foreground">No immediate prerequisites detected in official data.</p>
               )}
+
+              <div className="mt-3 pt-3 border-t border-border/70">
+                <h4 className="text-xs font-semibold">Next possible courses</h4>
+                {savedCourses.some((c) => c.status === "completed") ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {nextPossibleCourses.slice(0, 6).map((code) => (
+                      <button
+                        key={code}
+                        onClick={() => setSearchParams({ course: code })}
+                        className="rounded-md border border-border bg-background px-2.5 py-1 text-xs hover:bg-accent"
+                      >
+                        {code}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">Mark more courses as completed to see next options.</p>
+                )}
+              </div>
             </div>
           ) : null}
 

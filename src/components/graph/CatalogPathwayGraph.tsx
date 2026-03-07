@@ -69,11 +69,19 @@ export function CatalogPathwayGraph({
         style: {
           width: isTarget ? Math.round(NODE_W * 1.5) : NODE_W,
           borderRadius: 14,
-          border: isTarget ? "3px solid hsl(var(--brand))" : "1px solid hsl(var(--border))",
-          background: isDark ? "hsl(var(--card) / 0.98)" : "hsl(var(--card) / 0.98)",
+          border: isTarget
+            ? "3px solid hsl(var(--brand))"
+            : isCompleted
+              ? "2px solid hsl(142 55% 42%)"
+              : "1px solid hsl(var(--border))",
+          background: isCompleted ? "hsl(142 45% 92% / 0.9)" : "hsl(var(--card) / 0.98)",
           color: "hsl(var(--foreground))",
-          opacity: isCompleted ? 0.45 : 1,
-          boxShadow: isTarget ? "0 0 0 4px hsl(var(--brand) / 0.2), 0 10px 24px hsl(172 88% 40% / 0.2)" : "0 2px 8px hsl(220 20% 20% / 0.08)",
+          opacity: hiddenCodes?.has(course.code) ? 0 : 1,
+          boxShadow: isTarget
+            ? "0 0 0 4px hsl(var(--brand) / 0.2), 0 10px 24px hsl(172 88% 40% / 0.2)"
+            : isCompleted
+              ? "0 0 0 2px hsl(142 45% 50% / 0.25), 0 6px 14px hsl(142 40% 45% / 0.18)"
+              : "0 2px 8px hsl(220 20% 20% / 0.08)",
           fontSize: 12,
           lineHeight: 1.25,
           whiteSpace: "pre-wrap",
@@ -82,7 +90,7 @@ export function CatalogPathwayGraph({
 
       for (const prereq of course.prerequisiteCodes) {
         if (!courseMap.has(prereq)) continue
-        const incomingSatisfied = completedCodes?.has(course.code)
+        const pathSatisfied = Boolean(completedCodes?.has(prereq) || completedCodes?.has(course.code))
         edgeList.push({
           id: `${prereq}->${course.code}`,
           source: prereq,
@@ -90,9 +98,9 @@ export function CatalogPathwayGraph({
           hidden: (hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code)) || false,
           animated: false,
           style: {
-            stroke: "hsl(142 46% 45%)",
-            strokeWidth: 1.9,
-            opacity: incomingSatisfied ? 0.25 : 1,
+            stroke: pathSatisfied ? "hsl(142 58% 42%)" : "hsl(142 46% 45%)",
+            strokeWidth: pathSatisfied ? 2.4 : 1.9,
+            opacity: hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code) ? 0 : 1,
           },
         })
       }
