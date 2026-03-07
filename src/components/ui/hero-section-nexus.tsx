@@ -450,7 +450,7 @@ const InteractiveHero: React.FC = () => {
                newDots.push({
                    x,
                    y,
-                   baseColor: `rgba(87, 220, 205, ${BASE_OPACITY_MAX})`,
+                   baseColor: `rgba(253, 181, 21, ${BASE_OPACITY_MAX})`,
                    targetOpacity: baseOpacity,
                    currentOpacity: baseOpacity,
                    opacitySpeed: (Math.random() * 0.005) + 0.002,
@@ -626,7 +626,7 @@ const InteractiveHero: React.FC = () => {
     };
 
   return (
-    <div className="pt-[100px] relative bg-background text-foreground flex-1 flex-col overflow-x-hidden min-h-screen">
+    <div className="pt-[92px] relative bg-background text-foreground flex flex-col overflow-x-hidden min-h-[100svh]">
         <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none opacity-80" />
         <div className="absolute inset-0 z-1 pointer-events-none" style={{
             background: `linear-gradient(to bottom, transparent 0%, hsl(var(--page-bg)) 90%), radial-gradient(ellipse at center, transparent 40%, hsl(var(--page-bg)) 95%)`
@@ -672,7 +672,7 @@ const InteractiveHero: React.FC = () => {
                             style={{ borderColor: 'hsl(var(--search-border))' }}
                         />
                         {isSearchOpen && searchResults.length > 0 && (
-                            <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border shadow-xl bg-[hsl(var(--dropdown-bg))]" style={{ borderColor: 'hsl(var(--dropdown-border))' }}>
+                            <div className="absolute z-[1100] mt-1 max-h-60 w-full overflow-auto rounded-md border shadow-xl bg-[hsl(var(--dropdown-bg))]" style={{ borderColor: 'hsl(var(--dropdown-border))' }}>
                                 {searchResults.map((course: Course, index: number) => (
                                     <button
                                         key={course.code}
@@ -801,14 +801,7 @@ const InteractiveHero: React.FC = () => {
                 animate="visible"
                 className="w-full max-w-4xl mx-auto px-4 sm:px-0"
             >
-                <div className="w-full h-auto rounded-lg shadow-xl border bg-gradient-to-br p-8 flex items-center justify-center" style={{ borderColor: 'hsl(var(--border) / 0.5)', background: `linear-gradient(to bottom right, hsl(var(--brand) / 0.1), transparent)` }}>
-                    <div className="text-center">
-                        <svg className="w-32 h-32 mx-auto mb-4" style={{ color: 'hsl(var(--brand) / 0.3)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                        </svg>
-                        <p className="text-muted-foreground text-sm">Interactive course graph visualization</p>
-                    </div>
-                </div>
+                <div className="h-1.5 w-40 mx-auto rounded-full" style={{ background: 'hsl(var(--brand) / 0.45)' }} />
             </motion.div>
         </main>
 

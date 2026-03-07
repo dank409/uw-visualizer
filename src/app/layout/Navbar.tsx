@@ -89,7 +89,7 @@ export function Navbar() {
             style={{ borderColor: 'hsl(var(--search-border))' }}
           />
           {isOpen && results.length > 0 && (
-            <div className="absolute z-50 mt-2 max-h-64 w-full overflow-auto rounded-xl border liquid-glass" style={{ borderColor: 'hsl(var(--dropdown-border) / 0.65)' }}>
+            <div className="absolute z-[1100] mt-2 max-h-64 w-full overflow-auto rounded-xl border liquid-glass animate-in fade-in-0 zoom-in-95 duration-100" style={{ borderColor: 'hsl(var(--dropdown-border) / 0.65)' }}>
               {results.map((course: Course, index: number) => (
                 <button
                   key={course.code}
