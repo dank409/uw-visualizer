@@ -25,9 +25,9 @@
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
     
-    /* Custom theme colors */
-    --brand: 172 88% 50%; /* #0CF2A0 */
-    --brand-dark: 172 88% 40%;
+    /* UW brand colors */
+    --brand: 42 100% 55%; /* #FDB515 / UW gold */
+    --brand-dark: 42 100% 45%;
     --page-bg: 0 0% 100%;
     --page-bg-secondary: 0 0% 98%;
     --text-primary: 222.2 84% 4.9%;
@@ -66,8 +66,8 @@
     --ring: 0 0% 25%;
     
     /* Custom theme colors for dark mode */
-    --brand: 172 88% 50%; /* #0CF2A0 - same brand color */
-    --brand-dark: 172 88% 40%;
+    --brand: 42 100% 55%;
+    --brand-dark: 42 100% 45%;
     --page-bg: 0 0% 7%; /* #111111 */
     --page-bg-secondary: 0 0% 5%;
     --text-primary: 0 0% 98%;
@@ -87,10 +87,19 @@
 @layer base {
   body {
     background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(1100px 700px at 12% -12%, hsl(var(--brand) / 0.08), transparent 55%),
+      radial-gradient(900px 650px at 100% 0%, hsl(42 100% 85% / 0.12), transparent 60%);
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(1100px 700px at 12% -12%, hsl(var(--brand) / 0.14), transparent 55%),
+      radial-gradient(900px 650px at 100% 0%, hsl(42 80% 25% / 0.18), transparent 60%);
   }
 }
 
@@ -100,6 +109,35 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .liquid-glass {
+    position: relative;
+    background: hsl(var(--card) / 0.68);
+    border: 1px solid hsl(var(--border) / 0.55);
+    backdrop-filter: saturate(165%) blur(16px);
+    -webkit-backdrop-filter: saturate(165%) blur(16px);
+    box-shadow:
+      0 10px 30px hsl(220 40% 2% / 0.08),
+      inset 0 1px 0 hsl(0 0% 100% / 0.55);
+  }
+
+  .dark .liquid-glass {
+    background: hsl(var(--card) / 0.5);
+    border-color: hsl(var(--border) / 0.7);
+    box-shadow:
+      0 14px 36px hsl(220 50% 0% / 0.45),
+      inset 0 1px 0 hsl(0 0% 100% / 0.08);
+  }
+
+  .liquid-glass-soft {
+    background: hsl(var(--card) / 0.48);
+    border: 1px solid hsl(var(--border) / 0.5);
+    backdrop-filter: saturate(155%) blur(12px);
+    -webkit-backdrop-filter: saturate(155%) blur(12px);
+    box-shadow:
+      0 6px 18px hsl(220 40% 2% / 0.08),
+      inset 0 1px 0 hsl(0 0% 100% / 0.45);
   }
   
   .glass-light {

@@ -73778,5 +73778,19 @@
       "WKRPT401"
     ],
     "crossListed": []
+  },
+  {
+    "pid": "HkXrxcJ9ll",
+    "code": "RCS 265",
+    "title": "The Psychology of Spiritual Experiences",
+    "description": "",
+    "units": 0.5,
+    "prerequisitesHtml": null,
+    "corequisitesHtml": null,
+    "antirequisitesHtml": null,
+    "prereqCourses": [],
+    "coreqCourses": [],
+    "antireqCourses": [],
+    "crossListed": []
   }
 ]

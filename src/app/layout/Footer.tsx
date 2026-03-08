@@ -1,40 +1,12 @@
-import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Github, Linkedin, Mail } from "lucide-react"
-import { useLocation } from "react-router-dom"
-import { cn } from "@/lib/utils"
-
-const footerNavItems = [
-  { path: "/", label: "Home" },
-  { path: "/courses", label: "Courses" },
-  { path: "/programmes", label: "Programmes" },
-  { path: "/about", label: "About" },
-]
 
 export function Footer() {
-  const location = useLocation()
-
   return (
-    <footer className="border-t bg-background" style={{ borderColor: 'hsl(var(--border) / 0.5)' }}>
-      <div className="max-w-screen-xl mx-auto px-6 md:px-10 lg:px-16 py-8">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-6">
-            {footerNavItems.map((item) => {
-              const isActive = location.pathname === item.path
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    "text-sm text-muted-foreground hover:text-[hsl(var(--brand))] transition-colors duration-200",
-                    isActive && "text-[hsl(var(--brand))]"
-                  )}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-          </div>
+    <footer className="border-t bg-background/45 backdrop-blur-xl" style={{ borderColor: 'hsl(var(--border) / 0.5)' }}>
+      <div className="max-w-screen-xl mx-auto px-6 md:px-10 lg:px-16 py-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="text-xs text-muted-foreground">© {new Date().getFullYear()} UW Visualizer</div>
 
           <div className="flex items-center gap-6">
             <motion.a
@@ -68,7 +40,7 @@ export function Footer() {
               whileTap={{ scale: 0.95 }}
             >
               <Mail className="w-4 h-4" />
-              <span className="hidden sm:inline">Email</span>
+              <span className="hidden sm:inline">Contact</span>
             </motion.a>
           </div>
         </div>
@@ -76,4 +48,3 @@ export function Footer() {
     </footer>
   )
 }
-

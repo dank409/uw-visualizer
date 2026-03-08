@@ -74,14 +74,14 @@ export function searchCourses(query: string): Course[] {
     return [];
   }
 
-  const codeQuery = normalizeCourseCode(query.trim());
-  const titleQuery = query.trim().toUpperCase();
+  const normalizedCodeQuery = normalizeCourseCode(query.trim());
+  const normalizedTitleQuery = query.trim().toUpperCase();
   const results: Course[] = [];
 
   for (const course of index.values()) {
     if (
-      course.code.includes(codeQuery) ||
-      course.title.toUpperCase().includes(titleQuery)
+      course.code.includes(normalizedCodeQuery) ||
+      course.title.toUpperCase().includes(normalizedTitleQuery)
     ) {
       results.push(course);
     }

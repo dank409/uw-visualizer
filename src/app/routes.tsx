@@ -8,12 +8,12 @@ import { NotFoundPage } from "@/pages/NotFoundPage"
 
 export const router = createBrowserRouter([
   {
-    path: "/",
-    element: <HomePage />,
-  },
-  {
     element: <AppLayout />,
     children: [
+      {
+        path: "/",
+        element: <HomePage />,
+      },
       {
         path: "courses",
         element: <CoursesPage />,
@@ -33,4 +33,3 @@ export const router = createBrowserRouter([
     ],
   },
 ])
-
