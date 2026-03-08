@@ -622,7 +622,7 @@ const InteractiveHero: React.FC = () => {
     };
 
   return (
-    <div className="pt-[88px] relative bg-background text-foreground flex flex-col overflow-x-hidden min-h-[72svh]">
+    <div className="pt-[88px] relative bg-background text-foreground flex flex-col overflow-x-hidden">
         <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none opacity-80" />
         <div className="absolute inset-0 z-1 pointer-events-none" style={{
             background: `linear-gradient(to bottom, transparent 0%, hsl(var(--page-bg)) 90%), radial-gradient(ellipse at center, transparent 40%, hsl(var(--page-bg)) 95%)`
@@ -648,7 +648,7 @@ const InteractiveHero: React.FC = () => {
                 <div className="hidden sm:flex items-center gap-1 absolute left-[220px] md:left-[260px]">
                     <Link to="/" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Home</Link>
                     <Link to="/courses" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Courses</Link>
-                    <Link to="/programmes" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Programmes</Link>
+                    <Link to="/programmes" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Programs</Link>
                     <Link to="/about" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">About</Link>
                 </div>
 
@@ -733,7 +733,7 @@ const InteractiveHero: React.FC = () => {
             </AnimatePresence>
         </motion.header>
 
-        <main className="flex-grow flex min-h-[340px] md:min-h-[400px] flex-col items-center justify-center text-center px-4 pt-4 pb-4 relative z-10">
+        <main className="flex flex-col items-center justify-start text-center px-4 pt-4 pb-0 relative z-10">
 
             <motion.h1
                 variants={headlineVariants}

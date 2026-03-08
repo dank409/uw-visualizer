@@ -96,7 +96,7 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-1 shrink-0">
           <Link to="/" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Home</Link>
           <Link to="/courses" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Courses</Link>
-          <Link to="/programmes" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Programmes</Link>
+          <Link to="/programmes" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Programs</Link>
           <Link to="/about" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">About</Link>
         </div>
 
