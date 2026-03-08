@@ -41,12 +41,14 @@ export function CatalogPathwayGraph({
   courseMap,
   completedCodes,
   directCompletedCodes,
+  hiddenCodes,
   onSelectCode,
 }: {
   targetCode: string
   courseMap: Map<string, CourseNodeData>
   completedCodes?: Set<string>
   directCompletedCodes?: Set<string>
+  hiddenCodes?: Set<string>
   onSelectCode?: (code: string) => void
 }) {
   const [rf, setRf] = useState<ReactFlowInstance | null>(null)
@@ -69,6 +71,7 @@ export function CatalogPathwayGraph({
         data: { label: `${course.code}\n${course.title}${isAssumed ? "\n(assumed prereq)" : ""}` },
         ariaLabel: isAssumed ? `Required for completed course (assumed satisfied): ${course.code}` : course.code,
         type: "default",
+        hidden: hiddenCodes?.has(course.code) || false,
         position: { x: 0, y: 0 },
         style: {
           width: isTarget ? Math.round(NODE_W * 1.5) : NODE_W,
@@ -90,7 +93,7 @@ export function CatalogPathwayGraph({
                 : "hsl(42 100% 91% / 0.95)"
               : "hsl(var(--card) / 0.98)",
           color: (isCompleted || isAssumed) ? completedLabelColor : "hsl(var(--foreground))",
-          opacity: 1,
+          opacity: hiddenCodes?.has(course.code) ? 0 : 1,
           boxShadow: isTarget
             ? "0 0 0 4px hsl(var(--brand) / 0.28), 0 10px 24px hsl(42 100% 45% / 0.26)"
             : isCompleted
@@ -111,18 +114,19 @@ export function CatalogPathwayGraph({
           id: `${prereq}->${course.code}`,
           source: prereq,
           target: course.code,
+          hidden: (hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code)) || false,
           animated: false,
           style: {
             stroke: pathSatisfied ? "hsl(42 90% 46%)" : "hsl(42 55% 42%)",
             strokeWidth: pathSatisfied ? 2.5 : 1.9,
-            opacity: 1,
+            opacity: hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code) ? 0 : 1,
           },
         })
       }
     }
 
     return { nodes: getLayouted(nodeList, edgeList), edges: edgeList }
-  }, [courseMap, targetCode, isDark, completedCodes, directCompletedCodes])
+  }, [courseMap, targetCode, isDark, completedCodes, directCompletedCodes, hiddenCodes])
 
   const comfortableZoom = nodes.length > 20 ? 0.78 : nodes.length > 12 ? 0.86 : 0.96
 
