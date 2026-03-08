@@ -645,7 +645,7 @@ const InteractiveHero: React.FC = () => {
                     <span className="text-xl font-bold text-foreground ml-2">UW Visualizer</span>
                 </Link>
 
-                <div className="hidden sm:flex items-center gap-1 absolute left-[180px]">
+                <div className="hidden sm:flex items-center gap-1 absolute left-[220px] md:left-[260px]">
                     <Link to="/" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Home</Link>
                     <Link to="/courses" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Courses</Link>
                     <Link to="/programmes" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Programmes</Link>
@@ -733,7 +733,7 @@ const InteractiveHero: React.FC = () => {
             </AnimatePresence>
         </motion.header>
 
-        <main className="flex-grow flex min-h-[420px] md:min-h-[500px] flex-col items-center justify-center text-center px-4 pt-6 pb-10 relative z-10">
+        <main className="flex-grow flex min-h-[340px] md:min-h-[400px] flex-col items-center justify-center text-center px-4 pt-4 pb-4 relative z-10">
 
             <motion.h1
                 variants={headlineVariants}
