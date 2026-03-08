@@ -152,6 +152,23 @@ export function ProgrammesPage() {
 
         {loading ? <div className="mt-4 text-sm text-muted-foreground">Loading program roadmap…</div> : null}
 
+        {!selected ? (
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="rounded-lg border border-border bg-muted/20 p-3">
+              <h3 className="text-sm font-semibold">1) Pick a programme</h3>
+              <p className="mt-1 text-xs text-muted-foreground">Search by name or code (e.g. Computer Science, Actuarial Science).</p>
+            </div>
+            <div className="rounded-lg border border-border bg-muted/20 p-3">
+              <h3 className="text-sm font-semibold">2) Compare against My Courses</h3>
+              <p className="mt-1 text-xs text-muted-foreground">Completed courses are auto-counted toward requirement coverage.</p>
+            </div>
+            <div className="rounded-lg border border-border bg-muted/20 p-3">
+              <h3 className="text-sm font-semibold">3) Plan around bottlenecks</h3>
+              <p className="mt-1 text-xs text-muted-foreground">Prioritize high-prerequisite-depth courses to avoid delays later.</p>
+            </div>
+          </div>
+        ) : null}
+
         {selected ? (
           <div className="mt-5 grid gap-4 md:grid-cols-[1.2fr_1fr]">
             <div className="rounded-lg border border-border bg-muted/20 p-3">
@@ -188,6 +205,26 @@ export function ProgrammesPage() {
                   <div
                     className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc"
                     dangerouslySetInnerHTML={{ __html: selected.minimumAverageSRequired }}
+                  />
+                </details>
+              ) : null}
+
+              {selected.declarationRequirements ? (
+                <details className="mt-2 rounded-md border border-border bg-background p-2">
+                  <summary className="cursor-pointer text-sm font-medium">Declaration requirements</summary>
+                  <div
+                    className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc"
+                    dangerouslySetInnerHTML={{ __html: selected.declarationRequirements }}
+                  />
+                </details>
+              ) : null}
+
+              {selected.graduationRequirements ? (
+                <details className="mt-2 rounded-md border border-border bg-background p-2">
+                  <summary className="cursor-pointer text-sm font-medium">Graduation requirements</summary>
+                  <div
+                    className="mt-2 text-xs leading-5 text-foreground [&_ul]:ml-4 [&_ul]:list-disc"
+                    dangerouslySetInnerHTML={{ __html: selected.graduationRequirements }}
                   />
                 </details>
               ) : null}

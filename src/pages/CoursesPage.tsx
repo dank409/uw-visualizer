@@ -203,20 +203,10 @@ export function CoursesPage() {
   }, [groupState])
 
   const effectiveCompletedCodes = useMemo(() => {
-    const next = new Set<string>(completedCodes)
-    const walk = (code: string) => {
-      const node = courseMap.get(code)
-      if (!node) return
-      for (const p of node.prerequisiteCodes) {
-        if (!next.has(p)) {
-          next.add(p)
-          walk(p)
-        }
-      }
-    }
-    for (const code of completedCodes) walk(code)
-    return next
-  }, [completedCodes, courseMap])
+    // Only treat explicitly checked/saved courses as completed.
+    // Auto-inferring transitive prerequisites from graph edges over-highlights OR branches.
+    return new Set<string>(completedCodes)
+  }, [completedCodes])
 
   const hiddenCodes = useMemo(() => {
     if (!hideSatisfiedAlternatives || !target) return new Set<string>()

@@ -84,6 +84,7 @@ export function CatalogPathwayGraph({
       const isDirect = Boolean(directCompletedCodes?.has(course.code))
       const isAssumed = Boolean(completedCodes?.has(course.code) && !isDirect)
       const isCompleted = isDirect
+      const completedLabelColor = isDark ? "#111827" : "#0f172a"
       const focusHidden = focusedMode && !focusVisible.has(course.code)
       nodeList.push({
         id: course.code,
@@ -103,11 +104,15 @@ export function CatalogPathwayGraph({
                 ? "1.5px solid hsl(42 70% 55%)"
                 : "1px solid hsl(var(--border))",
           background: isAssumed
-            ? "hsl(45 100% 95% / 0.88)"
+            ? isDark
+              ? "hsl(45 92% 76% / 0.95)"
+              : "hsl(45 100% 95% / 0.88)"
             : isCompleted
-              ? "hsl(42 100% 91% / 0.95)"
+              ? isDark
+                ? "hsl(42 100% 72% / 0.95)"
+                : "hsl(42 100% 91% / 0.95)"
               : "hsl(var(--card) / 0.98)",
-          color: (isCompleted || isAssumed) ? "#151515" : "hsl(var(--foreground))",
+          color: (isCompleted || isAssumed) ? completedLabelColor : "hsl(var(--foreground))",
           opacity: hiddenCodes?.has(course.code) ? 0 : 1,
           boxShadow: isTarget
             ? "0 0 0 4px hsl(var(--brand) / 0.28), 0 10px 24px hsl(42 100% 45% / 0.26)"
@@ -124,7 +129,7 @@ export function CatalogPathwayGraph({
 
       for (const prereq of course.prerequisiteCodes) {
         if (!courseMap.has(prereq)) continue
-        const pathSatisfied = Boolean(completedCodes?.has(prereq) || completedCodes?.has(course.code))
+        const pathSatisfied = Boolean(completedCodes?.has(prereq))
         const edgeFocusHidden = focusedMode && (!focusVisible.has(prereq) || !focusVisible.has(course.code))
         edgeList.push({
           id: `${prereq}->${course.code}`,
