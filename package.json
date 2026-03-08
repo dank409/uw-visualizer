@@ -10,8 +10,7 @@
     "crosscheck:catalog": "node scripts/crosscheck-kuali-catalog.mjs",
     "test:parser": "tsx tests/parser.test.ts",
     "test:search-regression": "node tests/search-regression.mjs",
-    "test:graph-depth-invariant": "node tests/graph-depth-invariant.mjs",
-    "qa:heartbeat": "npm run build && npm run test:parser && npm run test:search-regression && npm run test:graph-depth-invariant"
+    "qa:heartbeat": "npm run build && npm run test:parser && npm run test:search-regression"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.0.5",
