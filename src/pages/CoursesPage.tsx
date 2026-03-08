@@ -257,6 +257,8 @@ export function CoursesPage() {
     return hidden
   }, [groupState, target, courseMap, hideSatisfiedAlternatives])
 
+  const statusByCode = useMemo(() => new Map(savedCourses.map((c) => [c.code, c.status])), [savedCourses])
+
   const allSatisfied = trackerProgress.total > 0 && trackerProgress.done === trackerProgress.total
   const courseGroupsSatisfied = groupState
     .filter((g) => g.id !== "program")
@@ -531,6 +533,10 @@ export function CoursesPage() {
                   completedCodes={effectiveCompletedCodes}
                   directCompletedCodes={completedCodes}
                   hiddenCodes={hiddenCodes}
+                  statusByCode={statusByCode}
+                  onSetStatus={(code, status) => upsertSavedCourse(code, status)}
+                  onRemoveStatus={(code) => removeSavedCourse(code)}
+                  onViewCourse={(code) => setSearchParams({ course: code })}
                 />
               </div>
 

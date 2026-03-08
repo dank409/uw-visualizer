@@ -3,6 +3,7 @@ import ReactFlow, {
   Background,
   Controls,
   MiniMap,
+  NodeToolbar,
   Position,
   type Edge,
   type Node,
@@ -42,16 +43,23 @@ export function CatalogPathwayGraph({
   completedCodes,
   directCompletedCodes,
   hiddenCodes,
-  onSelectCode,
+  statusByCode,
+  onSetStatus,
+  onRemoveStatus,
+  onViewCourse,
 }: {
   targetCode: string
   courseMap: Map<string, CourseNodeData>
   completedCodes?: Set<string>
   directCompletedCodes?: Set<string>
   hiddenCodes?: Set<string>
-  onSelectCode?: (code: string) => void
+  statusByCode: Map<string, "completed" | "in_progress" | "planned">
+  onSetStatus: (code: string, status: "completed" | "planned") => void
+  onRemoveStatus: (code: string) => void
+  onViewCourse: (code: string) => void
 }) {
   const [rf, setRf] = useState<ReactFlowInstance | null>(null)
+  const [activeNode, setActiveNode] = useState<string | null>(null)
 
   const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark")
 
@@ -135,6 +143,14 @@ export function CatalogPathwayGraph({
     rf.fitView({ padding: 0.3, duration: 300 })
   }, [rf, nodes, targetCode])
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActiveNode(null)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [])
+
   const centerTarget = () => {
     if (!rf) return
     const targetNode = nodes.find((n) => n.id === targetCode)
@@ -157,8 +173,54 @@ export function CatalogPathwayGraph({
         onlyRenderVisibleElements
         proOptions={{ hideAttribution: true }}
         onInit={setRf}
-        onNodeClick={(_, n) => onSelectCode?.(n.id)}
+        onNodeClick={(_, n) => setActiveNode(n.id)}
+        onPaneClick={() => setActiveNode(null)}
       >
+        {activeNode && courseMap.get(activeNode) ? (
+          <NodeToolbar nodeId={activeNode} isVisible position={Position.Right} offset={12}>
+            <div className="w-64 rounded-lg border border-border bg-card p-3 shadow-lg">
+              <div className="text-sm font-semibold">{activeNode}</div>
+              <div className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{courseMap.get(activeNode)?.title}</div>
+              <div className="mt-2">
+                {statusByCode.get(activeNode) ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">Status: {statusByCode.get(activeNode)}</span>
+                    <button
+                      className="rounded border border-border px-2 py-1 text-xs hover:bg-accent"
+                      onClick={() => onRemoveStatus(activeNode)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      className="rounded border border-border px-2 py-1 text-xs hover:bg-accent"
+                      onClick={() => onSetStatus(activeNode, "completed")}
+                    >
+                      Mark completed
+                    </button>
+                    <button
+                      className="rounded border border-border px-2 py-1 text-xs hover:bg-accent"
+                      onClick={() => onSetStatus(activeNode, "planned")}
+                    >
+                      Mark planned
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button
+                className="mt-2 text-xs text-[hsl(var(--brand-dark))] underline underline-offset-2"
+                onClick={() => {
+                  onViewCourse(activeNode)
+                  setActiveNode(null)
+                }}
+              >
+                View course
+              </button>
+            </div>
+          </NodeToolbar>
+        ) : null}
         {nodes.length <= 24 ? <MiniMap pannable zoomable nodeStrokeWidth={3} className="!bg-card !border-border" /> : null}
         <Controls showInteractive={false} />
         <Background gap={20} size={1} color={isDark ? "#2b3345" : "#d9dee8"} />
