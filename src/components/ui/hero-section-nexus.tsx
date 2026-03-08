@@ -626,7 +626,7 @@ const InteractiveHero: React.FC = () => {
     };
 
   return (
-    <div className="pt-[92px] relative bg-background text-foreground flex flex-col overflow-x-hidden min-h-[100svh]">
+    <div className="pt-[88px] relative bg-background text-foreground flex flex-col overflow-x-hidden min-h-[72svh]">
         <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none opacity-80" />
         <div className="absolute inset-0 z-1 pointer-events-none" style={{
             background: `linear-gradient(to bottom, transparent 0%, hsl(var(--page-bg)) 90%), radial-gradient(ellipse at center, transparent 40%, hsl(var(--page-bg)) 95%)`
@@ -707,6 +707,12 @@ const InteractiveHero: React.FC = () => {
                     </motion.button>
                 </div>
             </nav>
+            <div className="flex items-center gap-1 overflow-x-auto px-4 pb-2 md:px-6 lg:px-8">
+                <Link to="/" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">Home</Link>
+                <Link to="/courses" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">Courses</Link>
+                <Link to="/programmes" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">Programmes</Link>
+                <Link to="/about" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">About</Link>
+            </div>
 
             <AnimatePresence>
                 {isMobileMenuOpen && (
@@ -730,7 +736,7 @@ const InteractiveHero: React.FC = () => {
             </AnimatePresence>
         </motion.header>
 
-        <main className="flex-grow flex min-h-[560px] md:min-h-[620px] flex-col items-center justify-center text-center px-4 pt-8 pb-16 relative z-10">
+        <main className="flex-grow flex min-h-[420px] md:min-h-[500px] flex-col items-center justify-center text-center px-4 pt-6 pb-10 relative z-10">
 
             <motion.h1
                 variants={headlineVariants}
