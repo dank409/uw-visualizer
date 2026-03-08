@@ -228,34 +228,61 @@ export function CoursesPage() {
       return seen
     }
 
-    const keep = new Set<string>([target.code])
-    const hideCandidates = new Set<string>()
+    const altHidden = new Set<string>()
 
-    for (const group of groupState) {
-      const courseOptions = group.options.filter((o) => o.kind === "course" && o.code) as Array<RequirementOption & { code: string }>
-      if (courseOptions.length === 0) continue
+    // Global pass: apply satisfied-OR hiding to every node in the visible tree,
+    // not only the target course's own requirement groups.
+    for (const node of courseMap.values()) {
+      const groups = parseTrackerGroups(node.prerequisitesHtml)
+      const anyCourseGroups = groups.filter((g) => g.mode === "any" && g.options.some((o) => o.kind === "course" && o.code))
 
-      const checked = group.checkedOptions.filter((o) => o.kind === "course" && o.code) as Array<RequirementOption & { code: string }>
-      const visible = group.satisfied && group.mode === "any" ? checked : courseOptions
+      for (const group of groups) {
+        const courseOptions = group.options.filter((o) => o.kind === "course" && o.code) as Array<RequirementOption & { code: string }>
+        if (courseOptions.length === 0) continue
 
-      for (const opt of visible) {
-        for (const code of getClosure(opt.code)) keep.add(code)
+        const checked = courseOptions.filter((o) => effectiveCompletedCodes.has(o.code))
+        if (group.mode === "any" && checked.length > 0) {
+          const hidden = courseOptions.filter((o) => !checked.some((c) => c.code === o.code))
+          for (const opt of hidden) {
+            for (const code of getClosure(opt.code)) altHidden.add(code)
+          }
+        }
       }
 
-      if (group.satisfied && group.mode === "any") {
-        const hidden = courseOptions.filter((o) => !checked.some((c) => c.code === o.code))
-        for (const opt of hidden) {
-          for (const code of getClosure(opt.code)) hideCandidates.add(code)
+      // Fallback for nested "Complete 1 of the following" structures that may not
+      // be fully captured by row-level parsing (e.g., CS136-style wrapper rules).
+      if (anyCourseGroups.length === 0 && /Complete\s*(?:<!-- -->)?1(?:<!-- -->)?\s*of the following/i.test(node.prerequisitesHtml) && node.prerequisiteCodes.length > 1) {
+        const options = node.prerequisiteCodes
+        const checked = options.filter((code) => effectiveCompletedCodes.has(code))
+        if (checked.length > 0) {
+          for (const alt of options) {
+            if (checked.includes(alt)) continue
+            for (const c of getClosure(alt)) altHidden.add(c)
+          }
         }
       }
     }
 
+    // Recompute what is still needed from target after hiding alternatives.
+    const needed = new Set<string>()
+    const walkNeeded = (code: string) => {
+      if (needed.has(code)) return
+      needed.add(code)
+      const node = courseMap.get(code)
+      if (!node) return
+      for (const p of node.prerequisiteCodes) {
+        if (altHidden.has(p)) continue
+        walkNeeded(p)
+      }
+    }
+    walkNeeded(target.code)
+
     const hidden = new Set<string>()
-    for (const code of hideCandidates) {
-      if (!keep.has(code) && code !== target.code) hidden.add(code)
+    for (const code of courseMap.keys()) {
+      if (!needed.has(code) && code !== target.code) hidden.add(code)
     }
     return hidden
-  }, [groupState, target, courseMap, hideSatisfiedAlternatives])
+  }, [target, courseMap, hideSatisfiedAlternatives, effectiveCompletedCodes])
 
   const statusByCode = useMemo(() => new Map(savedCourses.map((c) => [c.code, c.status])), [savedCourses])
 

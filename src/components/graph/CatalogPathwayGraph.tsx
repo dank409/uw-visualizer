@@ -137,6 +137,8 @@ export function CatalogPathwayGraph({
   }, [courseMap, targetCode, isDark, completedCodes, directCompletedCodes, hiddenCodes])
 
   const comfortableZoom = nodes.length > 20 ? 0.78 : nodes.length > 12 ? 0.86 : 0.96
+  const visibleNodeCount = nodes.filter((n) => !n.hidden).length
+  const hasNoPrereqs = visibleNodeCount <= 1
 
   useEffect(() => {
     if (!rf || nodes.length === 0) return
@@ -240,6 +242,14 @@ export function CatalogPathwayGraph({
           Center target
         </button>
       </div>
+
+      {hasNoPrereqs ? (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+          <div className="rounded-md border border-border/70 bg-card/92 px-3 py-2 text-sm text-muted-foreground shadow-sm">
+            This course has no prerequisites — you’re good to go!
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
