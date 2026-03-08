@@ -15,25 +15,65 @@ import type { CourseNodeData } from "@/lib/uwCatalog"
 const NODE_W = 260
 const NODE_H = 84
 
-function getLayouted(nodes: Node[], edges: Edge[]) {
-  const g = new dagre.graphlib.Graph()
-  g.setDefaultEdgeLabel(() => ({}))
-  g.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 90, marginx: 24, marginy: 24 })
+function getLayouted(nodes: Node[], edges: Edge[], depthByCode: Map<string, number>, focusedMode: boolean) {
+  if (!focusedMode) {
+    const g = new dagre.graphlib.Graph()
+    g.setDefaultEdgeLabel(() => ({}))
+    g.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 90, marginx: 24, marginy: 24 })
 
-  nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }))
-  edges.forEach((e) => g.setEdge(e.source, e.target))
+    nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }))
+    edges.forEach((e) => g.setEdge(e.source, e.target))
 
-  dagre.layout(g)
+    dagre.layout(g)
 
-  return nodes.map((n) => {
-    const pos = g.node(n.id)
-    return {
-      ...n,
-      targetPosition: Position.Top,
-      sourcePosition: Position.Bottom,
-      position: { x: pos.x - NODE_W / 2, y: pos.y - NODE_H / 2 },
+    return nodes.map((n) => {
+      const pos = g.node(n.id) || { x: 0, y: 0 }
+      return {
+        ...n,
+        targetPosition: Position.Top,
+        sourcePosition: Position.Bottom,
+        position: { x: pos.x - NODE_W / 2, y: pos.y - NODE_H / 2 },
+      }
+    })
+  }
+
+  const perLevel = new Map<number, string[]>()
+  for (const n of nodes) {
+    const d = depthByCode.get(n.id) ?? 99
+    if (!perLevel.has(d)) perLevel.set(d, [])
+    perLevel.get(d)!.push(n.id)
+  }
+
+  const maxPerRow = 8
+  const colGap = 290
+  const rowGap = 106
+  const levelGap = 132
+  const yById = new Map<string, number>()
+  const xById = new Map<string, number>()
+
+  let yCursor = 0
+  const levels = [...perLevel.keys()].sort((a, b) => a - b)
+  for (const level of levels) {
+    const ids = (perLevel.get(level) || []).slice().sort()
+    const rowCount = Math.max(1, Math.ceil(ids.length / maxPerRow))
+    for (let row = 0; row < rowCount; row++) {
+      const slice = ids.slice(row * maxPerRow, (row + 1) * maxPerRow)
+      const rowY = yCursor + row * rowGap
+      const startX = -((slice.length - 1) * colGap) / 2
+      slice.forEach((id, i) => {
+        xById.set(id, startX + i * colGap)
+        yById.set(id, rowY)
+      })
     }
-  })
+    yCursor += (rowCount - 1) * rowGap + levelGap
+  }
+
+  return nodes.map((n) => ({
+    ...n,
+    targetPosition: Position.Top,
+    sourcePosition: Position.Bottom,
+    position: { x: (xById.get(n.id) ?? 0) - NODE_W / 2, y: (yById.get(n.id) ?? 0) - NODE_H / 2 },
+  }))
 }
 
 export function CatalogPathwayGraph({
@@ -41,7 +81,6 @@ export function CatalogPathwayGraph({
   courseMap,
   completedCodes,
   directCompletedCodes,
-  hiddenCodes,
   onSelectCode,
   depthLimit,
   onDepthChange,
@@ -50,7 +89,6 @@ export function CatalogPathwayGraph({
   courseMap: Map<string, CourseNodeData>
   completedCodes?: Set<string>
   directCompletedCodes?: Set<string>
-  hiddenCodes?: Set<string>
   onSelectCode?: (code: string) => void
   depthLimit: number
   onDepthChange: (next: number) => void
@@ -95,7 +133,7 @@ export function CatalogPathwayGraph({
         data: { label: `${course.code}\n${course.title}${isAssumed ? "\n(assumed prereq)" : ""}` },
         ariaLabel: isAssumed ? `Required for completed course (assumed satisfied): ${course.code}` : course.code,
         type: "default",
-        hidden: (hiddenCodes?.has(course.code) || focusHidden) || false,
+        hidden: focusHidden || false,
         position: { x: 0, y: 0 },
         style: {
           width: isTarget ? Math.round(NODE_W * 1.5) : NODE_W,
@@ -117,7 +155,7 @@ export function CatalogPathwayGraph({
                 : "hsl(42 100% 91% / 0.95)"
               : "hsl(var(--card) / 0.98)",
           color: (isCompleted || isAssumed) ? completedLabelColor : "hsl(var(--foreground))",
-          opacity: hiddenCodes?.has(course.code) ? 0 : 1,
+          opacity: 1,
           boxShadow: isTarget
             ? "0 0 0 4px hsl(var(--brand) / 0.28), 0 10px 24px hsl(42 100% 45% / 0.26)"
             : isCompleted
@@ -139,34 +177,26 @@ export function CatalogPathwayGraph({
           id: `${prereq}->${course.code}`,
           source: prereq,
           target: course.code,
-          hidden: (hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code) || edgeFocusHidden) || false,
+          hidden: edgeFocusHidden || false,
           animated: false,
           style: {
             stroke: pathSatisfied ? "hsl(42 90% 46%)" : "hsl(42 55% 42%)",
             strokeWidth: pathSatisfied ? 2.5 : 1.9,
-            opacity: hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code) ? 0 : 1,
+            opacity: 1,
           },
         })
       }
     }
 
-    return { nodes: getLayouted(nodeList, edgeList), edges: edgeList }
-  }, [courseMap, targetCode, isDark, completedCodes, directCompletedCodes, hiddenCodes, focusedMode, depthLimit])
+    return { nodes: getLayouted(nodeList, edgeList, dist, focusedMode), edges: edgeList }
+  }, [courseMap, targetCode, isDark, completedCodes, directCompletedCodes, focusedMode, depthLimit])
 
   const comfortableZoom = nodes.length > 20 ? 0.78 : nodes.length > 12 ? 0.86 : 0.96
 
   useEffect(() => {
     if (!rf || nodes.length === 0) return
-    rf.fitView({ padding: 0.3, duration: 280 })
-    const targetNode = nodes.find((n) => n.id === targetCode)
-    if (!targetNode) return
-    setTimeout(() => {
-      rf.setCenter(targetNode.position.x + NODE_W / 2, targetNode.position.y + NODE_H / 2, {
-        zoom: comfortableZoom,
-        duration: 260,
-      })
-    }, 290)
-  }, [rf, nodes, targetCode, comfortableZoom])
+    rf.fitView({ padding: 0.3, duration: 320 })
+  }, [rf, nodes, depthLimit, focusedMode])
 
   const centerTarget = () => {
     if (!rf) return

@@ -210,54 +210,6 @@ export function CoursesPage() {
     return new Set<string>(completedCodes)
   }, [completedCodes])
 
-  const hiddenCodes = useMemo(() => {
-    if (!hideSatisfiedAlternatives || !target) return new Set<string>()
-
-    const closureCache = new Map<string, Set<string>>()
-    const getClosure = (start: string): Set<string> => {
-      if (closureCache.has(start)) return closureCache.get(start)!
-      const seen = new Set<string>()
-      const walk = (code: string) => {
-        if (seen.has(code)) return
-        seen.add(code)
-        const node = courseMap.get(code)
-        if (!node) return
-        for (const p of node.prerequisiteCodes) walk(p)
-      }
-      walk(start)
-      closureCache.set(start, seen)
-      return seen
-    }
-
-    const keep = new Set<string>([target.code])
-    const hideCandidates = new Set<string>()
-
-    for (const group of groupState) {
-      const courseOptions = group.options.filter((o) => o.kind === "course" && o.code) as Array<RequirementOption & { code: string }>
-      if (courseOptions.length === 0) continue
-
-      const checked = group.checkedOptions.filter((o) => o.kind === "course" && o.code) as Array<RequirementOption & { code: string }>
-      const visible = group.satisfied && group.mode === "any" ? checked : courseOptions
-
-      for (const opt of visible) {
-        for (const code of getClosure(opt.code)) keep.add(code)
-      }
-
-      if (group.satisfied && group.mode === "any") {
-        const hidden = courseOptions.filter((o) => !checked.some((c) => c.code === o.code))
-        for (const opt of hidden) {
-          for (const code of getClosure(opt.code)) hideCandidates.add(code)
-        }
-      }
-    }
-
-    const hidden = new Set<string>()
-    for (const code of hideCandidates) {
-      if (!keep.has(code) && code !== target.code) hidden.add(code)
-    }
-    return hidden
-  }, [groupState, target, courseMap, hideSatisfiedAlternatives])
-
   const allSatisfied = trackerProgress.total > 0 && trackerProgress.done === trackerProgress.total
   const courseGroupsSatisfied = groupState
     .filter((g) => g.id !== "program")
@@ -531,7 +483,6 @@ export function CoursesPage() {
                   courseMap={courseMap}
                   completedCodes={effectiveCompletedCodes}
                   directCompletedCodes={completedCodes}
-                  hiddenCodes={graphDepth === 1 ? new Set<string>() : hiddenCodes}
                   depthLimit={graphDepth}
                   onDepthChange={setGraphDepth}
                 />
