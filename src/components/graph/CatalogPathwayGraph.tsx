@@ -197,37 +197,44 @@ export function CatalogPathwayGraph({
         <Background gap={20} size={1} color={isDark ? "#2b3345" : "#d9dee8"} />
       </ReactFlow>
 
-      <div className="absolute right-3 top-3 z-20 flex flex-wrap justify-end gap-2">
-        <button
-          onClick={() => setFocusedMode((v) => !v)}
-          className="rounded-md border border-border bg-card/90 px-2 py-1 text-xs hover:bg-accent"
-        >
-          {focusedMode ? "Focused" : "Full"}
-        </button>
-        <button
-          onClick={() => rf?.fitView({ padding: 0.24, duration: 300 })}
-          className="rounded-md border border-border bg-card/90 px-2 py-1 text-xs hover:bg-accent"
-        >
-          Fit view
-        </button>
-        <button
-          onClick={centerTarget}
-          className="rounded-md border border-border bg-card/90 px-2 py-1 text-xs hover:bg-accent"
-        >
-          Center target
-        </button>
-        <div className="flex items-center gap-1 rounded-md border border-border bg-card/90 px-1 py-1">
-          {[1, 2, 3, 4].map((d) => (
-            <button
-              key={d}
-              onClick={() => onDepthChange(d)}
-              className={`rounded px-2 py-0.5 text-xs ${depthLimit === d ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              title={d === 4 ? "Full tree" : `Depth ${d}`}
-            >
-              {d === 4 ? "Full" : d}
-            </button>
-          ))}
+      <div className="absolute right-3 top-3 z-20 flex flex-col items-end gap-1">
+        <div className="flex flex-wrap justify-end gap-2">
+          <button
+            onClick={() => setFocusedMode((v) => !v)}
+            className="rounded-md border border-border bg-card/90 px-2 py-1 text-xs hover:bg-accent"
+          >
+            {focusedMode ? "Focused" : "Full"}
+          </button>
+          <button
+            onClick={() => rf?.fitView({ padding: 0.24, duration: 300 })}
+            className="rounded-md border border-border bg-card/90 px-2 py-1 text-xs hover:bg-accent"
+          >
+            Fit view
+          </button>
+          <button
+            onClick={centerTarget}
+            className="rounded-md border border-border bg-card/90 px-2 py-1 text-xs hover:bg-accent"
+          >
+            Center target
+          </button>
+          <div className="flex items-center gap-1 rounded-md border border-border bg-card/90 px-1 py-1">
+            {[1, 2, 3, 4].map((d) => (
+              <button
+                key={d}
+                onClick={() => onDepthChange(d)}
+                className={`rounded px-2 py-0.5 text-xs ${depthLimit === d ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                title={d === 4 ? "Full tree" : `Depth ${d}`}
+              >
+                {d === 4 ? "Full" : d}
+              </button>
+            ))}
+          </div>
         </div>
+        {depthLimit === 1 ? (
+          <div className="rounded bg-card/90 px-2 py-0.5 text-[11px] text-muted-foreground border border-border/70">
+            Showing direct prerequisites only
+          </div>
+        ) : null}
       </div>
     </div>
   )

@@ -93,7 +93,8 @@ function suggestNextCourses(targetCode: string, allSatisfied: boolean): string[]
     CS136: ["CS136", "CS245", "CS246", "STAT230", "MATH239", "CS240"],
   }
   const base = map[targetCode] || [targetCode, "STAT230", "CO250", "MATH239", "AMATH231"]
-  return allSatisfied ? base : base.slice(1)
+  const list = allSatisfied ? base : base.slice(1)
+  return [...new Set(list)]
 }
 
 
@@ -383,22 +384,24 @@ export function CoursesPage() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Target course</div>
               <div className="mt-1 font-semibold">{target.code}</div>
               <div className="text-sm text-muted-foreground">{target.title}</div>
-              <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                 <a
                   href={target.catalogUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg border border-[hsl(var(--brand))/0.65] bg-[hsl(var(--brand))] px-3 py-2 text-center text-xs md:text-sm font-semibold text-black shadow-sm transition hover:scale-[1.01] hover:shadow-[0_0_12px_hsl(var(--brand)/0.45)]"
+                  className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-muted-foreground transition hover:border-[hsl(var(--brand))/0.45] hover:text-foreground"
                 >
-                  📅 Open Official Calendar Page
+                  <span aria-hidden>📅</span>
+                  <span>Official Calendar page</span>
                 </a>
                 <a
                   href={`https://uwflow.com/course/${target.code.toLowerCase()}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg border border-[hsl(var(--brand))/0.65] bg-[hsl(var(--brand))] px-3 py-2 text-center text-xs md:text-sm font-semibold text-black shadow-sm transition hover:scale-[1.01] hover:shadow-[0_0_12px_hsl(var(--brand)/0.45)]"
+                  className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-muted-foreground transition hover:border-[hsl(var(--brand))/0.45] hover:text-foreground"
                 >
-                  ⭐ See Reviews & Ratings on UWFlow
+                  <span aria-hidden>⭐</span>
+                  <span>UWFlow reviews</span>
                 </a>
               </div>
               <div className="mt-2 text-xs text-muted-foreground">Nodes shown: {courseMap.size} (depth-limited to {graphDepth === 4 ? "full tree" : `${graphDepth} level${graphDepth > 1 ? "s" : ""}`})</div>
