@@ -2,23 +2,40 @@ import InteractiveHero from "@/components/ui/hero-section-nexus"
 import { Link } from "react-router-dom"
 import { Footer } from "@/app/layout/Footer"
 
-const advancedCourses = ["MATH237", "MATH239", "CS341", "STAT230", "AMATH231", "CS350", "MATH245", "PHYS122"]
+const quickStartCourses = [
+  { code: "MATH237", title: "Calculus 3 for Honours Math" },
+  { code: "MATH239", title: "Introduction to Combinatorics" },
+  { code: "CS341", title: "Algorithms" },
+  { code: "STAT230", title: "Probability" },
+  { code: "AMATH231", title: "Applied Linear Algebra" },
+  { code: "CS350", title: "Operating Systems" },
+  { code: "MATH245", title: "Linear Algebra 2" },
+  { code: "PHYS122", title: "Physics 2" },
+]
 
 export function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="mb-6 md:mb-8">
+      <div className="mb-3 md:mb-4">
         <InteractiveHero />
       </div>
 
-      <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-0 md:pt-0 space-y-3">
+      <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-0 space-y-3">
         <section className="rounded-xl border border-border bg-card p-4 md:p-5">
-          <ul className="grid gap-1.5 text-sm text-muted-foreground md:grid-cols-2">
-            <li>• Visualize full prerequisite pathways</li>
-            <li>• Track your personal progress</li>
-            <li>• See what courses unlock next</li>
-            <li>• Official UW calendar data only</li>
-          </ul>
+          <h2 className="text-base md:text-lg font-semibold">Try a course with interesting prerequisites</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Jump straight in — these courses have rich prerequisite graphs.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {quickStartCourses.map((course) => (
+              <Link
+                key={course.code}
+                to={`/courses?course=${course.code}`}
+                className="rounded-lg border border-border bg-background px-3 py-2 hover:bg-accent transition-colors"
+              >
+                <div className="text-sm font-semibold">{course.code}</div>
+                <div className="text-xs text-muted-foreground line-clamp-1">{course.title}</div>
+              </Link>
+            ))}
+          </div>
         </section>
 
         <section className="rounded-xl border border-border bg-card p-4 md:p-5">
@@ -48,21 +65,6 @@ export function HomePage() {
                 <text x="298" y="122" textAnchor="middle" fontSize="9" fill="currentColor">hidden alt</text>
               </svg>
             </div>
-          </div>
-        </section>
-
-        <section className="rounded-xl border border-border bg-card p-4">
-          <h2 className="text-sm font-semibold">Try a course with interesting prerequisites</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {advancedCourses.map((code) => (
-              <Link
-                key={code}
-                to={`/courses?course=${code}`}
-                className="rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-accent"
-              >
-                {code}
-              </Link>
-            ))}
           </div>
         </section>
       </main>

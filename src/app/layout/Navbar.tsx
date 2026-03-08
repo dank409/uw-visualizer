@@ -93,6 +93,13 @@ export function Navbar() {
           <span className="ml-2 hidden text-base font-semibold tracking-tight text-foreground sm:inline">UW Visualizer</span>
         </Link>
 
+        <div className="hidden md:flex items-center gap-1 shrink-0">
+          <Link to="/" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Home</Link>
+          <Link to="/courses" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Courses</Link>
+          <Link to="/programmes" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Programmes</Link>
+          <Link to="/about" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">About</Link>
+        </div>
+
         <div ref={searchRef} className="relative flex-1 min-w-0">
           <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -138,12 +145,6 @@ export function Navbar() {
           <ThemeSwitch />
         </div>
       </nav>
-      <div className="mx-auto flex max-w-screen-xl items-center gap-1 overflow-x-auto px-4 pb-2 md:px-6 lg:px-8">
-        <Link to="/" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">Home</Link>
-        <Link to="/courses" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">Courses</Link>
-        <Link to="/programmes" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">Programmes</Link>
-        <Link to="/about" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">About</Link>
-      </div>
     </header>
   )
 }

@@ -620,10 +620,6 @@ const InteractiveHero: React.FC = () => {
         hidden: { opacity: 0, y: 10 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.5, delay: contentDelay + itemDelayIncrement * 3 } }
     };
-    const imageVariants: Variants = {
-        hidden: { opacity: 0, scale: 0.95, y: 20 },
-        visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.6, delay: contentDelay + itemDelayIncrement * 4, ease: [0.16, 1, 0.3, 1] } }
-    };
 
   return (
     <div className="pt-[88px] relative bg-background text-foreground flex flex-col overflow-x-hidden min-h-[72svh]">
@@ -649,9 +645,16 @@ const InteractiveHero: React.FC = () => {
                     <span className="text-xl font-bold text-foreground ml-2">UW Visualizer</span>
                 </Link>
 
+                <div className="hidden lg:flex items-center gap-1 absolute left-[320px]">
+                    <Link to="/" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Home</Link>
+                    <Link to="/courses" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Courses</Link>
+                    <Link to="/programmes" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Programmes</Link>
+                    <Link to="/about" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">About</Link>
+                </div>
+
                 <div 
                     ref={searchRef}
-                    className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2 w-full max-w-md"
+                    className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2 w-full max-w-[460px]"
                 >
                     <div className="relative w-full">
                         <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -707,12 +710,6 @@ const InteractiveHero: React.FC = () => {
                     </motion.button>
                 </div>
             </nav>
-            <div className="flex items-center gap-1 overflow-x-auto px-4 pb-2 md:px-6 lg:px-8">
-                <Link to="/" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">Home</Link>
-                <Link to="/courses" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">Courses</Link>
-                <Link to="/programmes" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">Programmes</Link>
-                <Link to="/about" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">About</Link>
-            </div>
 
             <AnimatePresence>
                 {isMobileMenuOpen && (
@@ -801,14 +798,6 @@ const InteractiveHero: React.FC = () => {
                 </Link>
             </motion.div>
 
-            <motion.div
-                variants={imageVariants}
-                initial="hidden"
-                animate="visible"
-                className="w-full max-w-4xl mx-auto px-4 sm:px-0"
-            >
-                <div className="h-1.5 w-40 mx-auto rounded-full" style={{ background: 'hsl(var(--brand) / 0.45)' }} />
-            </motion.div>
         </main>
 
     </div>
