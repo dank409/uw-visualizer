@@ -138,6 +138,12 @@ export function Navbar() {
           <ThemeSwitch />
         </div>
       </nav>
+      <div className="mx-auto flex max-w-screen-xl items-center gap-1 overflow-x-auto px-4 pb-2 md:px-6 lg:px-8">
+        <Link to="/" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">Home</Link>
+        <Link to="/courses" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">Courses</Link>
+        <Link to="/programmes" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">Programmes</Link>
+        <Link to="/about" className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent whitespace-nowrap">About</Link>
+      </div>
     </header>
   )
 }

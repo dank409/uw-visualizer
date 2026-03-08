@@ -165,12 +165,10 @@ export function CatalogPathwayGraph({
 
   if (hasNoPrereqs) {
     return (
-      <div className="relative h-[460px] md:h-[620px] w-full rounded-xl border border-border bg-card overflow-hidden">
-        <div className="h-full w-full flex items-center justify-center">
-          <div className="rounded-lg border border-border/70 bg-card/92 px-4 py-3 text-sm text-muted-foreground shadow-sm inline-flex items-center gap-2">
-            <span aria-hidden>✅</span>
-            <span>No prerequisites — you’re good to go!</span>
-          </div>
+      <div className="w-full rounded-xl border border-border bg-card p-4">
+        <div className="rounded-lg border border-border/70 bg-emerald-500/5 px-4 py-3 text-sm text-muted-foreground shadow-sm inline-flex items-center gap-2">
+          <span aria-hidden>✅</span>
+          <span>No prerequisites — you’re good to go!</span>
         </div>
       </div>
     )

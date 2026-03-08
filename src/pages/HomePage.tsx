@@ -7,11 +7,11 @@ const advancedCourses = ["MATH237", "MATH239", "CS341", "STAT230", "AMATH231", "
 export function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="mb-12 md:mb-14">
+      <div className="mb-6 md:mb-8">
         <InteractiveHero />
       </div>
 
-      <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-0 md:pt-0 space-y-4">
+      <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-0 md:pt-0 space-y-3">
         <section className="rounded-xl border border-border bg-card p-4 md:p-5">
           <ul className="grid gap-1.5 text-sm text-muted-foreground md:grid-cols-2">
             <li>• Visualize full prerequisite pathways</li>
@@ -36,16 +36,12 @@ export function HomePage() {
               <svg viewBox="0 0 340 140" className="mt-2 w-full h-28" aria-label="Sample prerequisite pathway demo">
                 <rect x="124" y="10" width="92" height="28" rx="6" fill="hsl(var(--brand) / 0.2)" stroke="hsl(var(--brand))" />
                 <text x="170" y="28" textAnchor="middle" fontSize="10" fill="currentColor">MATH237</text>
-
                 <rect x="54" y="70" width="92" height="28" rx="6" fill="hsl(var(--brand) / 0.16)" stroke="hsl(var(--brand))" />
                 <text x="100" y="88" textAnchor="middle" fontSize="10" fill="currentColor">MATH136 ✓</text>
-
                 <rect x="194" y="70" width="92" height="28" rx="6" fill="hsl(var(--brand) / 0.16)" stroke="hsl(var(--brand))" />
                 <text x="240" y="88" textAnchor="middle" fontSize="10" fill="currentColor">MATH138 ✓</text>
-
                 <path d="M146 70 L158 38" stroke="hsl(var(--brand))" strokeWidth="2" />
                 <path d="M194 70 L182 38" stroke="hsl(var(--brand))" strokeWidth="2" />
-
                 <rect x="8" y="108" width="68" height="20" rx="5" fill="hsl(var(--muted))" opacity="0.45" />
                 <text x="42" y="122" textAnchor="middle" fontSize="9" fill="currentColor">hidden alt</text>
                 <rect x="264" y="108" width="68" height="20" rx="5" fill="hsl(var(--muted))" opacity="0.45" />

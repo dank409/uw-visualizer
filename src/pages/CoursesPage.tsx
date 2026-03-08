@@ -87,6 +87,8 @@ function statusColor(status: SavedCourseStatus) {
   return "text-amber-500"
 }
 
+const quickStartCourses = ["CS245", "CS246", "CS341", "MATH237", "CO250", "AMATH231", "STAT230", "PHYS122"]
+
 function suggestNextCourses(targetCode: string, allSatisfied: boolean): string[] {
   const map: Record<string, string[]> = {
     MATH237: ["MATH237", "AMATH231", "STAT230", "MATH239", "CO250", "PMATH351"],
@@ -594,8 +596,20 @@ export function CoursesPage() {
               </div>
             </>
           ) : (
-            <div className="h-[460px] md:h-[620px] rounded-xl border border-border bg-card flex items-center justify-center text-muted-foreground">
-              Search for a course to visualize pathways
+            <div className="rounded-xl border border-border bg-card p-5 text-center">
+              <div className="text-sm text-muted-foreground">Search for a course to visualize pathways.</div>
+              <div className="mt-3 text-xs text-muted-foreground">Try a course with interesting prerequisites:</div>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+                {quickStartCourses.map((code) => (
+                  <button
+                    key={code}
+                    onClick={() => setSearchParams({ course: code })}
+                    className="rounded-md border border-border bg-background px-2.5 py-1 text-xs hover:bg-accent"
+                  >
+                    {code}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
