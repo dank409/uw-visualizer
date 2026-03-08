@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { motion } from "framer-motion"
 import { Link } from "react-router-dom"
 import { getCourse, loadCourseIndex } from "@/lib/courseIndex"
 import { extractProgramCourseCodes, getProgramById, searchPrograms } from "@/lib/programCatalog"
@@ -120,7 +121,12 @@ export function ProgrammesPage() {
   }, [requiredCodes, completed])
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
+      className="mx-auto w-full max-w-6xl px-4 py-8"
+    >
       <div className="rounded-xl border border-border bg-card p-4">
         <h1 className="text-xl font-semibold">Programmes Roadmap</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -277,6 +283,6 @@ export function ProgrammesPage() {
           </div>
         ) : null}
       </div>
-    </div>
+    </motion.div>
   )
 }

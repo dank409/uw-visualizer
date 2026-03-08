@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { Github, Mail } from "lucide-react"
+import { Github, Linkedin, Mail } from "lucide-react"
 
 export function Footer() {
   return (
@@ -9,6 +9,18 @@ export function Footer() {
           <div className="text-xs text-muted-foreground">© {new Date().getFullYear()} UW Visualizer</div>
 
           <div className="flex items-center gap-6">
+            <motion.a
+              href="https://www.linkedin.com/in/daniyal-kahloon/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-[hsl(var(--brand))] transition-colors duration-200"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Linkedin className="w-4 h-4" />
+              <span className="hidden sm:inline">LinkedIn</span>
+            </motion.a>
+
             <motion.a
               href="https://github.com/dank409/uw-visualizer"
               target="_blank"

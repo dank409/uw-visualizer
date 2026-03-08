@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { AlertTriangle } from "lucide-react"
+import { motion } from "framer-motion"
 import { useSearchParams } from "react-router-dom"
 import { CatalogPathwayGraph } from "@/components/graph/CatalogPathwayGraph"
 import {
@@ -391,7 +392,12 @@ export function CoursesPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
+      className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6"
+    >
       {error ? (
         <div className="mb-4 rounded-xl border-2 border-red-400 bg-red-50 p-4 text-sm text-red-800">
           <strong>Official data error:</strong> {error}
@@ -763,6 +769,6 @@ export function CoursesPage() {
           ) : null}
         </section>
       </div>
-    </div>
+    </motion.div>
   )
 }

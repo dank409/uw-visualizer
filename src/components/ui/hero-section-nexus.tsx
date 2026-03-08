@@ -735,7 +735,7 @@ const InteractiveHero: React.FC<{ showHeader?: boolean }> = ({ showHeader = true
         </motion.header>
         ) : null}
 
-        <main className="flex flex-col items-center justify-start text-center px-4 pt-4 pb-0 relative z-10">
+        <main className="flex flex-col items-center justify-start text-center px-4 pt-8 pb-0 relative z-10">
 
             <motion.h1
                 variants={headlineVariants}
