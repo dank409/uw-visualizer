@@ -111,5 +111,42 @@ export function parseTrackerGroups(html?: string): RequirementGroup[] {
     existing.options = [...new Map(opts.map((o) => [o.id, o])).values()]
   }
 
-  return [...merged.values()]
+  const normalized = [...merged.values()]
+
+  // Heuristic normalization:
+  // Some UW pages render "Complete 1 of the following" as two rows, e.g.
+  //  - PHYS111 (minimum grade ...)
+  //  - One of ECE105/PHYS115/PHYS121
+  // For tracking UX this should behave as one OR-group, not two mandatory groups.
+  const bySubject = new Map<string, RequirementGroup[]>()
+  for (const g of normalized) {
+    const subject = (g.options.find((o) => o.kind === "course" && o.code)?.code || "").match(/^([A-Z]+)/)?.[1] || ""
+    if (!subject) continue
+    if (!bySubject.has(subject)) bySubject.set(subject, [])
+    bySubject.get(subject)!.push(g)
+  }
+
+  const toDrop = new Set<string>()
+  const toAdd: RequirementGroup[] = []
+
+  for (const [subject, gs] of bySubject.entries()) {
+    const req = gs.find((g) => g.mode === "all" && /requirements$/i.test(g.title) && g.options.length === 1)
+    const any = gs.find((g) => g.mode === "any" && /options \(choose 1\)$/i.test(g.title))
+    if (!req || !any) continue
+
+    const mergedOptions = [...new Map([...req.options, ...any.options].map((o) => [o.id, o])).values()]
+    toDrop.add(req.id)
+    toDrop.add(any.id)
+    toAdd.push({
+      id: `${subject.toLowerCase()}-collapsed-any`,
+      title: `${subject} options (choose 1)`,
+      mode: "any",
+      options: mergedOptions,
+    })
+  }
+
+  const out = normalized.filter((g) => !toDrop.has(g.id))
+  out.push(...toAdd)
+
+  return out
 }
