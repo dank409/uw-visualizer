@@ -43,6 +43,8 @@ export function CatalogPathwayGraph({
   directCompletedCodes,
   hiddenCodes,
   onSelectCode,
+  depthLimit,
+  onDepthChange,
 }: {
   targetCode: string
   courseMap: Map<string, CourseNodeData>
@@ -50,6 +52,8 @@ export function CatalogPathwayGraph({
   directCompletedCodes?: Set<string>
   hiddenCodes?: Set<string>
   onSelectCode?: (code: string) => void
+  depthLimit: number
+  onDepthChange: (next: number) => void
 }) {
   const [rf, setRf] = useState<ReactFlowInstance | null>(null)
   const [focusedMode, setFocusedMode] = useState(true)
@@ -73,7 +77,7 @@ export function CatalogPathwayGraph({
 
     const focusVisible = new Set<string>()
     for (const [code, d] of dist.entries()) {
-      if (d <= 2) focusVisible.add(code)
+      if (d <= depthLimit) focusVisible.add(code)
     }
     focusVisible.add(targetCode)
     completedCodes?.forEach((c) => focusVisible.add(c))
@@ -147,7 +151,7 @@ export function CatalogPathwayGraph({
     }
 
     return { nodes: getLayouted(nodeList, edgeList), edges: edgeList }
-  }, [courseMap, targetCode, isDark, completedCodes, directCompletedCodes, hiddenCodes, focusedMode])
+  }, [courseMap, targetCode, isDark, completedCodes, directCompletedCodes, hiddenCodes, focusedMode, depthLimit])
 
   const comfortableZoom = nodes.length > 20 ? 0.78 : nodes.length > 12 ? 0.86 : 0.96
 
@@ -188,12 +192,12 @@ export function CatalogPathwayGraph({
         onInit={setRf}
         onNodeClick={(_, n) => onSelectCode?.(n.id)}
       >
-        <MiniMap pannable zoomable nodeStrokeWidth={3} className="!bg-card !border-border" />
+        {nodes.length <= 24 ? <MiniMap pannable zoomable nodeStrokeWidth={3} className="!bg-card !border-border" /> : null}
         <Controls showInteractive={false} />
         <Background gap={20} size={1} color={isDark ? "#2b3345" : "#d9dee8"} />
       </ReactFlow>
 
-      <div className="absolute right-3 top-3 z-20 flex gap-2">
+      <div className="absolute right-3 top-3 z-20 flex flex-wrap justify-end gap-2">
         <button
           onClick={() => setFocusedMode((v) => !v)}
           className="rounded-md border border-border bg-card/90 px-2 py-1 text-xs hover:bg-accent"
@@ -212,6 +216,18 @@ export function CatalogPathwayGraph({
         >
           Center target
         </button>
+        <div className="flex items-center gap-1 rounded-md border border-border bg-card/90 px-1 py-1">
+          {[1, 2, 3, 4].map((d) => (
+            <button
+              key={d}
+              onClick={() => onDepthChange(d)}
+              className={`rounded px-2 py-0.5 text-xs ${depthLimit === d ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              title={d === 4 ? "Full tree" : `Depth ${d}`}
+            >
+              {d === 4 ? "Full" : d}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   )

@@ -115,6 +115,7 @@ export function CoursesPage() {
   const [myAddResults, setMyAddResults] = useState<CatalogCourseSearchItem[]>([])
   const [myAddOpen, setMyAddOpen] = useState(false)
   const [myAddStatus, setMyAddStatus] = useState<SavedCourseStatus>("completed")
+  const [graphDepth, setGraphDepth] = useState(1)
 
   useEffect(() => {
     const initial = loadSavedCourses()
@@ -134,7 +135,7 @@ export function CoursesPage() {
     setLoading(true)
     setError(null)
 
-    buildCourseTreeFromCatalog(targetCode, 4)
+    buildCourseTreeFromCatalog(targetCode, graphDepth)
       .then((map) => {
         if (!active) return
         setCourseMap(map)
@@ -154,7 +155,7 @@ export function CoursesPage() {
     return () => {
       active = false
     }
-  }, [targetCode])
+  }, [targetCode, graphDepth])
 
 
   const target = useMemo(() => (targetCode ? courseMap.get(targetCode) || null : null), [targetCode, courseMap])
@@ -400,7 +401,7 @@ export function CoursesPage() {
                   ⭐ See Reviews & Ratings on UWFlow
                 </a>
               </div>
-              <div className="mt-2 text-xs text-muted-foreground">Nodes shown: {courseMap.size} (depth-limited to 4 levels)</div>
+              <div className="mt-2 text-xs text-muted-foreground">Nodes shown: {courseMap.size} (depth-limited to {graphDepth === 4 ? "full tree" : `${graphDepth} level${graphDepth > 1 ? "s" : ""}`})</div>
             </div>
           ) : null}
 
@@ -528,6 +529,8 @@ export function CoursesPage() {
                   completedCodes={effectiveCompletedCodes}
                   directCompletedCodes={completedCodes}
                   hiddenCodes={hiddenCodes}
+                  depthLimit={graphDepth}
+                  onDepthChange={setGraphDepth}
                 />
               </div>
 
