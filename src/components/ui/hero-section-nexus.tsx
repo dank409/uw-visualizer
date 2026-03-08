@@ -645,7 +645,7 @@ const InteractiveHero: React.FC = () => {
                     <span className="text-xl font-bold text-foreground ml-2">UW Visualizer</span>
                 </Link>
 
-                <div className="hidden lg:flex items-center gap-1 absolute left-[320px]">
+                <div className="hidden md:flex items-center gap-1 absolute left-[240px]">
                     <Link to="/" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Home</Link>
                     <Link to="/courses" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Courses</Link>
                     <Link to="/programmes" className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">Programmes</Link>
@@ -654,7 +654,7 @@ const InteractiveHero: React.FC = () => {
 
                 <div 
                     ref={searchRef}
-                    className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2 w-full max-w-[460px]"
+                    className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2 w-full max-w-[420px]"
                 >
                     <div className="relative w-full">
                         <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
