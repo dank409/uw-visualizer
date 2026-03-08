@@ -163,6 +163,19 @@ export function CatalogPathwayGraph({
     })
   }
 
+  if (hasNoPrereqs) {
+    return (
+      <div className="relative h-[460px] md:h-[620px] w-full rounded-xl border border-border bg-card overflow-hidden">
+        <div className="h-full w-full flex items-center justify-center">
+          <div className="rounded-lg border border-border/70 bg-card/92 px-4 py-3 text-sm text-muted-foreground shadow-sm inline-flex items-center gap-2">
+            <span aria-hidden>✅</span>
+            <span>No prerequisites — you’re good to go!</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="relative h-[460px] md:h-[620px] w-full rounded-xl border border-border bg-card overflow-hidden">
       <ReactFlow
@@ -242,14 +255,6 @@ export function CatalogPathwayGraph({
           Center target
         </button>
       </div>
-
-      {hasNoPrereqs ? (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-          <div className="rounded-md border border-border/70 bg-card/92 px-3 py-2 text-sm text-muted-foreground shadow-sm">
-            This course has no prerequisites — you’re good to go!
-          </div>
-        </div>
-      ) : null}
     </div>
   )
 }
