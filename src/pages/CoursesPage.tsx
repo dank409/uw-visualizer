@@ -528,7 +528,7 @@ export function CoursesPage() {
                   courseMap={courseMap}
                   completedCodes={effectiveCompletedCodes}
                   directCompletedCodes={completedCodes}
-                  hiddenCodes={hiddenCodes}
+                  hiddenCodes={graphDepth === 1 ? new Set<string>() : hiddenCodes}
                   depthLimit={graphDepth}
                   onDepthChange={setGraphDepth}
                 />
