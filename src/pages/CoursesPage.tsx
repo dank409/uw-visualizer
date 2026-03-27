@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
-import { AlertTriangle, ChevronDown, ExternalLink, X, Search } from "lucide-react"
+import { AlertTriangle, ChevronDown, ExternalLink, X, Search, Upload } from "lucide-react"
+import { TranscriptImportModal } from "@/components/course/TranscriptImportModal"
 import { motion } from "framer-motion"
 import { useSearchParams } from "react-router-dom"
 import { CatalogPathwayGraph } from "@/components/graph/CatalogPathwayGraph"
@@ -106,6 +107,7 @@ export function CoursesPage() {
   const [myAddResults, setMyAddResults] = useState<CatalogCourseSearchItem[]>([])
   const [myAddOpen, setMyAddOpen] = useState(false)
   const [myAddStatus, setMyAddStatus] = useState<SavedCourseStatus>("completed")
+  const [importOpen, setImportOpen] = useState(false)
 
   useEffect(() => {
     const initial = loadSavedCourses()
@@ -322,6 +324,11 @@ export function CoursesPage() {
     })
   }
 
+  const handleTranscriptImport = (codes: string[]) => {
+    for (const code of codes) upsertSavedCourse(code, "completed")
+    setImportOpen(false)
+  }
+
   const removeSavedCourse = (code: string) => {
     const normalized = normalize(code)
     setSavedCourses((prev) => {
@@ -467,6 +474,14 @@ export function CoursesPage() {
                     <option value="planned">Planned</option>
                   </select>
                 </div>
+
+                <button
+                  onClick={() => setImportOpen(true)}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-border/40 bg-card/30 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+                >
+                  <Upload className="w-3 h-3" />
+                  Import Transcript
+                </button>
 
                 {savedCourses.length > 0 ? (
                   <>
@@ -796,6 +811,12 @@ export function CoursesPage() {
           )}
         </div>
       </div>
+      <TranscriptImportModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        savedCourses={savedCourses}
+        onImport={handleTranscriptImport}
+      />
     </motion.div>
   )
 }
