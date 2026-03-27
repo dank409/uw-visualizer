@@ -8,9 +8,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 
-// @ts-expect-error - vite ?url import
-import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url"
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
 
 type SavedCourse = { code: string; status: "completed" | "in_progress" | "planned" }
 
@@ -42,10 +40,11 @@ function extractCourses(text: string): FoundCourse[] {
   let currentTerm: string | undefined
   let inSkipSection = false
 
-  const SKIP_RE = /Transfer Credit|Test Credit|Advanced Standing|Exchange Credit/i
+  const SKIP_RE = /Transfer Credit|Test Credit|Advanced Standing|Exchange Credit|Scholarships and Awards|Milestones/i
   const TERM_RE = /\b(Fall|Winter|Spring|Summer)\s+(\d{4})\b/i
-  // Matches subject (2-6 uppercase letters) then optional spaces then 3-digit number with optional letter
-  const COURSE_RE = /\b([A-Z]{2,6})\s{0,4}(\d{3}[A-Z]?)\b/g
+  // Matches subject (2-6 uppercase letters) then spaces then 1-3 digit number with optional letter suffix
+  // Handles PD 1, CS 135, COMMST 100, AMATH 231, etc.
+  const COURSE_RE = /\b([A-Z]{2,6})\s{1,6}(\d{1,3}[A-Z]?)\b/g
 
   for (const line of lines) {
     const termMatch = line.match(TERM_RE)
@@ -66,6 +65,8 @@ function extractCourses(text: string): FoundCourse[] {
       const subject = m[1]
       const number = m[2]
       if (IGNORE_SUBJECTS.has(subject)) continue
+      // Skip transfer credit placeholders like 1XX, 2XX
+      if (/X/.test(number)) continue
       const code = `${subject}${number}`
       if (seen.has(code)) continue
       seen.add(code)
@@ -110,15 +111,31 @@ export function TranscriptImportModal({ open, onOpenChange, savedCourses, onImpo
     setPhase("parsing")
     try {
       const arrayBuffer = await file.arrayBuffer()
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise
       let fullText = ""
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i)
         const content = await page.getTextContent()
-        fullText +=
-          content.items
-            .map((item) => ("str" in item ? item.str : ""))
-            .join(" ") + "\n"
+        // Reconstruct lines by grouping items with similar Y positions
+        const items = content.items.filter(
+          (item) => "str" in item && "transform" in item && (item as { str: string }).str.trim() !== ""
+        )
+        if (items.length === 0) continue
+        // Group by Y coordinate (transform[5]), sorted top to bottom
+        const lineMap = new Map<number, { x: number; str: string }[]>()
+        for (const item of items) {
+          const ti = item as unknown as { str: string; transform: number[] }
+          const y = Math.round(ti.transform[5])
+          const x = ti.transform[4]
+          if (!lineMap.has(y)) lineMap.set(y, [])
+          lineMap.get(y)!.push({ x, str: ti.str })
+        }
+        // Sort lines top-to-bottom (descending Y), items left-to-right
+        const sortedYs = [...lineMap.keys()].sort((a, b) => b - a)
+        for (const y of sortedYs) {
+          const lineItems = lineMap.get(y)!.sort((a, b) => a.x - b.x)
+          fullText += lineItems.map((li) => li.str).join("  ") + "\n"
+        }
       }
       const courses = extractCourses(fullText)
       if (courses.length === 0) {
