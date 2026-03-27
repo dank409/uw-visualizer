@@ -1,5 +1,4 @@
 import { useRef, useState } from "react"
-import * as pdfjsLib from "pdfjs-dist"
 import {
   Dialog,
   DialogContent,
@@ -7,8 +6,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
+import { parseTranscriptFile, type FoundCourse } from "@/lib/transcriptParser"
 
 type SavedCourse = { code: string; status: "completed" | "in_progress" | "planned" }
 
@@ -20,61 +18,6 @@ interface Props {
 }
 
 type Phase = "idle" | "parsing" | "preview" | "error"
-
-interface FoundCourse {
-  code: string
-  term?: string
-}
-
-// ── Extraction logic ──────────────────────────────────────────────────────────
-
-const IGNORE_SUBJECTS = new Set([
-  "ON", "AT", "IN", "BY", "OF", "TO", "OR", "GPA", "CAP", "AN", "AS", "IS",
-  "NO", "IF", "DO", "BE", "GO", "UP", "US", "IT", "HE", "WE", "ME",
-])
-
-function extractCourses(text: string): FoundCourse[] {
-  const lines = text.split("\n")
-  const result: FoundCourse[] = []
-  const seen = new Set<string>()
-  let currentTerm: string | undefined
-  let inSkipSection = false
-
-  const SKIP_RE = /Transfer Credit|Test Credit|Advanced Standing|Exchange Credit|Scholarships and Awards|Milestones/i
-  const TERM_RE = /\b(Fall|Winter|Spring|Summer)\s+(\d{4})\b/i
-  // Matches subject (2-6 uppercase letters) then spaces then 1-3 digit number with optional letter suffix
-  // Handles PD 1, CS 135, COMMST 100, AMATH 231, etc.
-  const COURSE_RE = /\b([A-Z]{2,6})\s{1,6}(\d{1,3}[A-Z]?)\b/g
-
-  for (const line of lines) {
-    const termMatch = line.match(TERM_RE)
-    if (termMatch) {
-      currentTerm = `${termMatch[1]} ${termMatch[2]}`
-      inSkipSection = false
-      continue
-    }
-    if (SKIP_RE.test(line)) {
-      inSkipSection = true
-      continue
-    }
-    if (inSkipSection) continue
-
-    COURSE_RE.lastIndex = 0
-    let m: RegExpExecArray | null
-    while ((m = COURSE_RE.exec(line)) !== null) {
-      const subject = m[1]
-      const number = m[2]
-      if (IGNORE_SUBJECTS.has(subject)) continue
-      // Skip transfer credit placeholders like 1XX, 2XX
-      if (/X/.test(number)) continue
-      const code = `${subject}${number}`
-      if (seen.has(code)) continue
-      seen.add(code)
-      result.push({ code, term: currentTerm })
-    }
-  }
-  return result
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -110,34 +53,7 @@ export function TranscriptImportModal({ open, onOpenChange, savedCourses, onImpo
     }
     setPhase("parsing")
     try {
-      const arrayBuffer = await file.arrayBuffer()
-      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise
-      let fullText = ""
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i)
-        const content = await page.getTextContent()
-        // Reconstruct lines by grouping items with similar Y positions
-        const items = content.items.filter(
-          (item) => "str" in item && "transform" in item && (item as { str: string }).str.trim() !== ""
-        )
-        if (items.length === 0) continue
-        // Group by Y coordinate (transform[5]), sorted top to bottom
-        const lineMap = new Map<number, { x: number; str: string }[]>()
-        for (const item of items) {
-          const ti = item as unknown as { str: string; transform: number[] }
-          const y = Math.round(ti.transform[5])
-          const x = ti.transform[4]
-          if (!lineMap.has(y)) lineMap.set(y, [])
-          lineMap.get(y)!.push({ x, str: ti.str })
-        }
-        // Sort lines top-to-bottom (descending Y), items left-to-right
-        const sortedYs = [...lineMap.keys()].sort((a, b) => b - a)
-        for (const y of sortedYs) {
-          const lineItems = lineMap.get(y)!.sort((a, b) => a.x - b.x)
-          fullText += lineItems.map((li) => li.str).join("  ") + "\n"
-        }
-      }
-      const courses = extractCourses(fullText)
+      const courses = await parseTranscriptFile(file)
       if (courses.length === 0) {
         setErrorMsg(
           "No UW courses found in this PDF. Make sure this is an unofficial transcript downloaded from Quest."

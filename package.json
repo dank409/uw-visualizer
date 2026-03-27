@@ -8,7 +8,7 @@
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "crosscheck:catalog": "node scripts/crosscheck-kuali-catalog.mjs",
-    "test:parser": "tsx tests/parser.test.ts",
+    "test:parser": "tsx tests/parser.test.ts && tsx tests/transcript-parser.test.ts",
     "test:search-regression": "node tests/search-regression.mjs",
     "qa:heartbeat": "npm run build && npm run test:parser && npm run test:search-regression"
   },
