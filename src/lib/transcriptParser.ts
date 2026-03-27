@@ -31,6 +31,8 @@ interface PdfJsLike {
 
 async function loadPdfJs(): Promise<PdfJsLike> {
   const pdfjsLib = await import("pdfjs-dist")
+  const workerUrl = await import("pdfjs-dist/build/pdf.worker.min.mjs?url")
+  ;(pdfjsLib as any).GlobalWorkerOptions.workerSrc = workerUrl.default
   return pdfjsLib as unknown as PdfJsLike
 }
 
@@ -40,10 +42,7 @@ const IGNORE_SUBJECTS = new Set([
 ])
 
 export function buildTranscriptPdfOptions(data: Uint8Array) {
-  return {
-    data,
-    disableWorker: true as const,
-  }
+  return { data }
 }
 
 export function extractCoursesFromTranscriptText(text: string): FoundCourse[] {
