@@ -5,6 +5,7 @@ import ReactFlow, {
   MiniMap,
   Position,
   Handle,
+  MarkerType,
   type Edge,
   type Node,
   type NodeProps,
@@ -17,26 +18,53 @@ import { cn } from "@/lib/utils"
 
 const NODE_W = 200
 const NODE_H = 62
+const TARGET_W = 240
 
 function getLayouted(nodes: Node[], edges: Edge[]) {
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
-  g.setGraph({ rankdir: "TB", nodesep: 40, ranksep: 70, marginx: 24, marginy: 24 })
+  g.setGraph({
+    rankdir: "TB",
+    nodesep: 80,
+    ranksep: 90,
+    marginx: 32,
+    marginy: 32,
+    ranker: "longest-path",
+  })
 
-  nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }))
+  nodes.forEach((n) => {
+    const isTarget = (n.data as CourseNodeType).isTarget
+    g.setNode(n.id, { width: isTarget ? TARGET_W : NODE_W, height: NODE_H })
+  })
   edges.forEach((e) => g.setEdge(e.source, e.target))
 
   dagre.layout(g)
 
   return nodes.map((n) => {
     const pos = g.node(n.id)
+    const isTarget = (n.data as CourseNodeType).isTarget
+    const w = isTarget ? TARGET_W : NODE_W
     return {
       ...n,
       targetPosition: Position.Top,
       sourcePosition: Position.Bottom,
-      position: { x: pos.x - NODE_W / 2, y: pos.y - NODE_H / 2 },
+      position: { x: pos.x - w / 2, y: pos.y - NODE_H / 2 },
     }
   })
+}
+
+function useIsDark() {
+  const [isDark, setIsDark] = useState(
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark")
+  )
+  useEffect(() => {
+    const obs = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"))
+    })
+    obs.observe(document.documentElement, { attributeFilter: ["class"] })
+    return () => obs.disconnect()
+  }, [])
+  return isDark
 }
 
 type CourseNodeType = {
@@ -64,7 +92,7 @@ const CourseNode = memo(({ data }: NodeProps<CourseNodeType>) => {
               ? "border-[hsl(var(--brand)/0.3)] bg-[hsl(var(--brand-muted)/0.3)]"
               : "border-border/60 bg-card/90 hover:border-border hover:shadow-sm"
       )}
-      style={{ width: isTarget ? NODE_W * 1.3 : NODE_W }}
+      style={{ width: isTarget ? TARGET_W : NODE_W }}
     >
       <Handle type="target" position={Position.Top} className="!w-2 !h-2 !bg-border !border-0 !-top-1" />
 
@@ -87,7 +115,7 @@ const CourseNode = memo(({ data }: NodeProps<CourseNodeType>) => {
         )}
         {status === "in_progress" && (
           <span className="shrink-0 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-[8px] text-white font-bold mt-0.5">
-            ⏳
+            ●
           </span>
         )}
         {isAssumed && !status && (
@@ -128,8 +156,7 @@ export function CatalogPathwayGraph({
 }) {
   const [rf, setRf] = useState<ReactFlowInstance | null>(null)
   const [activeNode, setActiveNode] = useState<string | null>(null)
-
-  const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark")
+  const isDark = useIsDark()
 
   const { nodes, edges } = useMemo(() => {
     const nodeList: Node[] = []
@@ -166,14 +193,20 @@ export function CatalogPathwayGraph({
           target: course.code,
           hidden: (hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code)) || false,
           animated: false,
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            width: 12,
+            height: 12,
+            color: pathSatisfied
+              ? "hsl(45 93% 47%)"
+              : isDark ? "hsl(220 10% 38%)" : "hsl(220 13% 72%)",
+          },
           style: {
             stroke: pathSatisfied
               ? "hsl(45 93% 47%)"
-              : isDark
-                ? "hsl(220 10% 32%)"
-                : "hsl(220 13% 80%)",
+              : isDark ? "hsl(220 10% 38%)" : "hsl(220 13% 72%)",
             strokeWidth: pathSatisfied ? 2 : 1.5,
-            opacity: hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code) ? 0 : 0.8,
+            opacity: hiddenCodes?.has(prereq) || hiddenCodes?.has(course.code) ? 0 : 0.85,
           },
         })
       }
@@ -187,7 +220,10 @@ export function CatalogPathwayGraph({
 
   useEffect(() => {
     if (!rf || nodes.length === 0) return
-    rf.fitView({ padding: 0.25, duration: 300 })
+    const timeout = setTimeout(() => {
+      rf.fitView({ padding: 0.18, duration: 400, maxZoom: 1 })
+    }, 50)
+    return () => clearTimeout(timeout)
   }, [rf, nodes, targetCode])
 
   useEffect(() => {
@@ -214,14 +250,14 @@ export function CatalogPathwayGraph({
   }
 
   return (
-    <div className="relative w-full rounded-2xl glass-panel overflow-hidden" style={{ height: "min(620px, 70vh)" }}>
+    <div className="relative w-full rounded-2xl glass-panel overflow-hidden" style={{ height: "min(640px, 72vh)" }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.15}
+        fitViewOptions={{ padding: 0.18, maxZoom: 1 }}
+        minZoom={0.1}
         maxZoom={2}
         onlyRenderVisibleElements
         proOptions={{ hideAttribution: true }}
@@ -229,16 +265,16 @@ export function CatalogPathwayGraph({
         onNodeClick={handleNodeClick}
         onPaneClick={() => setActiveNode(null)}
       >
-        {nodes.length <= 24 && (
+        {visibleNodeCount <= 20 && (
           <MiniMap
             pannable
             zoomable
             nodeStrokeWidth={2}
-            maskColor={isDark ? "rgba(10,12,18,0.7)" : "rgba(240,242,248,0.7)"}
+            maskColor={isDark ? "rgba(10,12,18,0.75)" : "rgba(240,242,248,0.75)"}
           />
         )}
         <Controls showInteractive={false} />
-        <Background gap={24} size={1} color={isDark ? "hsl(225 12% 14%)" : "hsl(220 14% 94%)"} />
+        <Background gap={28} size={1} color={isDark ? "hsl(225 12% 13%)" : "hsl(220 14% 93%)"} />
       </ReactFlow>
 
       {/* Node detail popover */}
@@ -293,7 +329,7 @@ export function CatalogPathwayGraph({
       {/* Controls overlay */}
       <div className="absolute right-3 top-3 z-20 flex gap-1.5">
         <button
-          onClick={() => rf?.fitView({ padding: 0.2, duration: 300 })}
+          onClick={() => rf?.fitView({ padding: 0.18, duration: 300, maxZoom: 1 })}
           className="rounded-lg glass-soft px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-accent/60 transition-colors"
         >
           Fit
@@ -303,8 +339,8 @@ export function CatalogPathwayGraph({
             if (!rf) return
             const tn = nodes.find((n) => n.id === targetCode)
             if (!tn) return
-            rf.setCenter(tn.position.x + NODE_W / 2, tn.position.y + NODE_H / 2, {
-              zoom: nodes.length > 12 ? 0.9 : 1,
+            rf.setCenter(tn.position.x + TARGET_W / 2, tn.position.y + NODE_H / 2, {
+              zoom: 1,
               duration: 300,
             })
           }}
